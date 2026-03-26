@@ -3,42 +3,132 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let nombre = localStorage.getItem("rep") || "";
+const contenedor = document.getElementById("pedidos");
 
+let repartidor = localStorage.getItem("repartidor") || "";
+
+// Guardar nombre
 function guardar() {
-  nombre = document.getElementById("nombre").value;
-  localStorage.setItem("rep", nombre);
-  cargar();
+  const nombreInput = document.getElementById("nombre").value;
+
+  if (!nombreInput) {
+    alert("Escribe tu nombre");
+    return;
+  }
+
+  localStorage.setItem("repartidor", nombreInput);
+  repartidor = nombreInput;
+
+  cargarPedidos();
 }
 
-async function cargar() {
-  const { data } = await supabaseClient.from("pedidos").select("*");
+// Cargar pedidos
+async function cargarPedidos() {
+  contenedor.innerHTML = "Cargando...";
 
-  const cont = document.getElementById("pedidos");
-  cont.innerHTML = "";
+  const { data, error } = await supabaseClient
+    .from("pedidos")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    contenedor.innerHTML = "Error";
+    return;
+  }
+
+  contenedor.innerHTML = "";
 
   data.forEach(p => {
-    if (p.estado === "pendiente" || p.repartidor_id === nombre) {
+
+    // Mostrar pedidos disponibles o asignados al repartidor
+    if (p.estado === "pendiente" || p.repartidor_id === repartidor) {
+
       const card = document.createElement("div");
       card.className = "card";
 
       card.innerHTML = `
-        <p>${p.descripcion}</p>
-        <button onclick="aceptar('${p.id}')">Aceptar</button>
+        <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
+        <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
+        <p><strong>👤 Envía:</strong> ${p.remitente}</p>
+        <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
+        <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
+        <p><strong>💰 Precio:</strong> $${p.precio}</p>
+        <p><strong>📊 Estado:</strong> ${p.estado}</p>
+
+        ${
+          p.estado === "pendiente"
+          ? `<button onclick="aceptarPedido('${p.id}')">Aceptar pedido</button>`
+          : ""
+        }
+
+        ${
+          p.repartidor_id === repartidor && p.estado !== "entregado"
+          ? `
+            <button onclick="cambiarEstado('${p.id}','en camino')">En camino</button>
+            <button onclick="cambiarEstado('${p.id}','entregado')">Entregado</button>
+          `
+          : ""
+        }
+
+        <div class="imagenes">
+          ${(p.fotos || []).map(f => `<img src="${f}" />`).join("")}
+        </div>
       `;
 
-      cont.appendChild(card);
+      contenedor.appendChild(card);
     }
+
   });
 }
 
-async function aceptar(id) {
-  await supabaseClient
+// Aceptar pedido
+async function aceptarPedido(id) {
+  if (!repartidor) {
+    alert("Primero guarda tu nombre");
+    return;
+  }
+
+  const { error } = await supabaseClient
     .from("pedidos")
-    .update({ estado: "asignado", repartidor_id: nombre })
+    .update({
+      estado: "asignado",
+      repartidor_id: repartidor
+    })
     .eq("id", id);
 
-  cargar();
+  if (error) {
+    console.error(error);
+    alert("Error ❌");
+  } else {
+    cargarPedidos();
+  }
 }
 
-cargar();
+// Cambiar estado
+async function cambiarEstado(id, estado) {
+  const { error } = await supabaseClient
+    .from("pedidos")
+    .update({ estado })
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+  } else {
+    cargarPedidos();
+  }
+}
+
+// Tiempo real 🔥
+supabaseClient
+  .channel("pedidos")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "pedidos" },
+    () => {
+      cargarPedidos();
+    }
+  )
+  .subscribe();
+
+cargarPedidos();
