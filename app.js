@@ -3,9 +3,9 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Calcular distancia aproximada
+// Distancia simulada
 function calcularDistancia() {
-  return Math.floor(Math.random() * 6) + 1; // 1 a 6 km
+  return Math.floor(Math.random() * 6) + 1;
 }
 
 // Calcular envío
@@ -21,7 +21,7 @@ function calcularEnvio(distancia, pago) {
   return costo;
 }
 
-// Actualizar cálculo
+// Actualizar envío
 function actualizarEnvio() {
   const pago = parseFloat(document.getElementById("pago").value || 0);
   if (!pago) return;
@@ -39,6 +39,26 @@ const form = document.getElementById("pedidoForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const fotosInput = document.getElementById("fotos");
+  let fotosUrls = [];
+
+  // 🔥 SUBIR IMÁGENES
+  for (let file of fotosInput.files) {
+    const fileName = Date.now() + "-" + file.name;
+
+    const { error } = await supabaseClient.storage
+      .from("fotos")
+      .upload(fileName, file);
+
+    if (!error) {
+      const { data } = supabaseClient.storage
+        .from("fotos")
+        .getPublicUrl(fileName);
+
+      fotosUrls.push(data.publicUrl);
+    }
+  }
+
   const datos = {
     recoleccion: recoleccion.value,
     entrega: entrega.value,
@@ -49,12 +69,11 @@ form.addEventListener("submit", async (e) => {
     tel_remitente: telRemitente.value,
     tel_destinatario: telDestinatario.value,
     envio: envioCalculado.value,
+    fotos: fotosUrls, // 🔥 AQUÍ SE GUARDAN
     estado: "pendiente"
   };
 
   const { data } = await supabaseClient.from("pedidos").insert([datos]).select();
-
-  const id = data[0].id;
 
   const texto = `🚚 Nuevo pedido
 📍 ${datos.recoleccion} → ${datos.entrega}
