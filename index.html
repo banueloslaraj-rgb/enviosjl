@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mandaditos Express</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>🚚 Mandaditos Express</h1>
+
+  <form id="pedidoForm">
+    <input type="text" id="recoleccion" placeholder="Dirección de recolección" required>
+    <input type="text" id="entrega" placeholder="Dirección de entrega" required>
+    <input type="text" id="remitente" placeholder="Nombre de quien envía" required>
+    <input type="text" id="destinatario" placeholder="Nombre de quien recibe" required>
+
+    <textarea id="descripcion" placeholder="¿Qué se envía?" required></textarea>
+
+    <input type="number" id="precio" placeholder="Costo del envío ($)" required>
+
+    <label>Subir fotos del envío</label>
+    <input type="file" id="fotos" multiple>
+
+    <button type="submit">Solicitar servicio</button>
+  </form>
+
+  <p id="mensaje"></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
