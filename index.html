@@ -13,21 +13,25 @@
 
   <header>
     <h1>🛵 Mandaditos Express</h1>
-    <p>Envíos rápidos en tu ciudad</p>
+    <p>Envíos rápidos</p>
   </header>
 
   <form id="pedidoForm" class="card">
 
-    <h2>Solicitar servicio</h2>
-
     <input type="text" id="recoleccion" placeholder="📍 Dirección de recolección" required>
     <input type="text" id="entrega" placeholder="📍 Dirección de entrega" required>
+
     <input type="text" id="remitente" placeholder="👤 Quién envía" required>
+    <input type="tel" id="telRemitente" placeholder="📞 Teléfono quien envía" required>
+
     <input type="text" id="destinatario" placeholder="👤 Quién recibe" required>
+    <input type="tel" id="telDestinatario" placeholder="📞 Teléfono quien recibe" required>
 
     <textarea id="descripcion" placeholder="📦 ¿Qué se envía?" required></textarea>
 
-    <input type="number" id="precio" placeholder="💰 Costo del envío" required>
+    <input type="number" id="pago" placeholder="💰 ¿Cuánto se paga por el producto?" required>
+
+    <input type="text" id="envioCalculado" placeholder="🚚 Costo de envío automático" readonly>
 
     <label class="file-label">
       📸 Subir fotos
@@ -42,10 +46,7 @@
 
 </div>
 
-<!-- Botón flotante WhatsApp -->
-<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">
-  💬
-</a>
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="app.js"></script>

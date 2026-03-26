@@ -1,6 +1,4 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -14,19 +12,12 @@ body {
   padding: 15px;
 }
 
-header {
-  text-align: center;
-}
-
-header h1 {
-  color: #27ae60;
-}
+header { text-align: center; }
 
 .card {
   background: white;
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 
 input, textarea {
@@ -37,21 +28,9 @@ input, textarea {
   border: 1px solid #ddd;
 }
 
-textarea {
-  resize: none;
-}
-
-.file-label {
-  display: block;
-  margin-top: 10px;
-  background: #f7f7f7;
-  padding: 10px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.file-label input {
-  display: none;
+#envioCalculado {
+  background: #eafaf1;
+  font-weight: bold;
 }
 
 button {
@@ -60,32 +39,16 @@ button {
   padding: 14px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(45deg, #27ae60, #2ecc71);
+  background: #27ae60;
   color: white;
-  font-weight: bold;
 }
 
-#mensaje {
-  text-align: center;
-  margin-top: 10px;
-}
-
-/* Botón WhatsApp */
 .wpp-btn {
   position: fixed;
   bottom: 20px;
   right: 20px;
   background: #25D366;
   color: white;
-  font-size: 22px;
   padding: 15px;
   border-radius: 50%;
-  text-decoration: none;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .card {
-    padding: 15px;
-  }
 }

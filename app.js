@@ -3,71 +3,66 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Calcular distancia aproximada
+function calcularDistancia() {
+  return Math.floor(Math.random() * 6) + 1; // 1 a 6 km
+}
+
+// Calcular envío
+function calcularEnvio(distancia, pago) {
+  let costo = 0;
+
+  if (distancia <= 2) costo = 40;
+  else if (distancia <= 5) costo = 55;
+  else costo = 70;
+
+  costo += Math.floor(pago / 1000) * 10;
+
+  return costo;
+}
+
+// Actualizar cálculo
+function actualizarEnvio() {
+  const pago = parseFloat(document.getElementById("pago").value || 0);
+  if (!pago) return;
+
+  const distancia = calcularDistancia();
+  const envio = calcularEnvio(distancia, pago);
+
+  document.getElementById("envioCalculado").value = `$${envio} aprox (${distancia} km)`;
+}
+
+document.getElementById("pago").addEventListener("input", actualizarEnvio);
+
 const form = document.getElementById("pedidoForm");
-const mensaje = document.getElementById("mensaje");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  mensaje.textContent = "Enviando...";
+  const datos = {
+    recoleccion: recoleccion.value,
+    entrega: entrega.value,
+    remitente: remitente.value,
+    destinatario: destinatario.value,
+    descripcion: descripcion.value,
+    precio: pago.value,
+    tel_remitente: telRemitente.value,
+    tel_destinatario: telDestinatario.value,
+    envio: envioCalculado.value,
+    estado: "pendiente"
+  };
 
-  const recoleccion = document.getElementById("recoleccion").value;
-  const entrega = document.getElementById("entrega").value;
-  const remitente = document.getElementById("remitente").value;
-  const destinatario = document.getElementById("destinatario").value;
-  const descripcion = document.getElementById("descripcion").value;
-  const precio = document.getElementById("precio").value;
-  const fotosInput = document.getElementById("fotos");
+  const { data } = await supabaseClient.from("pedidos").insert([datos]).select();
 
-  let fotosUrls = [];
+  const id = data[0].id;
 
-  for (let file of fotosInput.files) {
-    const fileName = Date.now() + "-" + file.name;
+  const texto = `🚚 Nuevo pedido
+📍 ${datos.recoleccion} → ${datos.entrega}
+👤 ${datos.remitente} (${datos.tel_remitente})
+👤 ${datos.destinatario} (${datos.tel_destinatario})
+📦 ${datos.descripcion}
+💰 $${datos.precio}
+🚚 Envío: ${datos.envio}`;
 
-    const { error } = await supabaseClient.storage
-      .from("fotos")
-      .upload(fileName, file);
-
-    if (!error) {
-      const { data } = supabaseClient.storage
-        .from("fotos")
-        .getPublicUrl(fileName);
-
-      fotosUrls.push(data.publicUrl);
-    }
-  }
-
-  const { error } = await supabaseClient.from("pedidos").insert([
-    {
-      recoleccion,
-      entrega,
-      remitente,
-      destinatario,
-      descripcion,
-      precio,
-      fotos: fotosUrls,
-      estado: "pendiente"
-    }
-  ]);
-
-  if (error) {
-    mensaje.textContent = "Error ❌";
-    return;
-  }
-
-  mensaje.textContent = "Pedido enviado ✅";
-
-  const texto = `🚚 *Nuevo pedido*
-📍 Recolección: ${recoleccion}
-📍 Entrega: ${entrega}
-👤 Envía: ${remitente}
-👤 Recibe: ${destinatario}
-📦 ${descripcion}
-💰 $${precio}`;
-
-  const url = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
-
-  window.location.href = url;
-
-  form.reset();
+  window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
 });
