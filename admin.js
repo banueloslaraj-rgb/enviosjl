@@ -15,7 +15,7 @@ async function cargarPedidos() {
 
   if (error) {
     console.error(error);
-    contenedor.innerHTML = "Error al cargar";
+    contenedor.innerHTML = "Error";
     return;
   }
 
@@ -33,9 +33,16 @@ async function cargarPedidos() {
       <button onclick="abrirMaps('${p.entrega}')">📍 Ver en mapa</button>
 
       <p><strong>👤 Envía:</strong> ${p.remitente}</p>
+      <p><strong>📞 Tel:</strong> ${p.tel_remitente || "No disponible"}</p>
+      <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar</a>
+
       <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
+      <p><strong>📞 Tel:</strong> ${p.tel_destinatario || "No disponible"}</p>
+      <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar</a>
+
       <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
-      <p><strong>💰 Precio:</strong> $${p.precio}</p>
+      <p><strong>💰 Pago producto:</strong> $${p.precio}</p>
+      <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
       <p><strong>📊 Estado:</strong> ${p.estado}</p>
 
       <select id="estado-${p.id}">
@@ -57,20 +64,14 @@ async function cargarPedidos() {
 }
 
 async function actualizarEstado(id) {
-  const select = document.getElementById(`estado-${id}`);
-  const nuevoEstado = select.value;
+  const estado = document.getElementById(`estado-${id}`).value;
 
-  const { error } = await supabaseClient
+  await supabaseClient
     .from("pedidos")
-    .update({ estado: nuevoEstado })
+    .update({ estado })
     .eq("id", id);
 
-  if (error) {
-    alert("Error ❌");
-  } else {
-    alert("Actualizado ✅");
-    cargarPedidos();
-  }
+  cargarPedidos();
 }
 
 function abrirMaps(direccion) {
@@ -81,8 +82,7 @@ function abrirMaps(direccion) {
 // Tiempo real
 supabaseClient
   .channel("pedidos")
-  .on(
-    "postgres_changes",
+  .on("postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
     () => cargarPedidos()
   )

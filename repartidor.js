@@ -7,7 +7,6 @@ const contenedor = document.getElementById("pedidos");
 
 let repartidor = localStorage.getItem("repartidor") || "";
 
-// Guardar nombre
 function guardar() {
   const nombreInput = document.getElementById("nombre").value;
 
@@ -22,20 +21,13 @@ function guardar() {
   cargarPedidos();
 }
 
-// Cargar pedidos
 async function cargarPedidos() {
   contenedor.innerHTML = "Cargando...";
 
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("pedidos")
     .select("*")
     .order("fecha", { ascending: false });
-
-  if (error) {
-    console.error(error);
-    contenedor.innerHTML = "Error";
-    return;
-  }
 
   contenedor.innerHTML = "";
 
@@ -54,9 +46,16 @@ async function cargarPedidos() {
         <button onclick="abrirMaps('${p.entrega}')">📍 Ir a entrega</button>
 
         <p><strong>👤 Envía:</strong> ${p.remitente}</p>
+        <p><strong>📞 Tel:</strong> ${p.tel_remitente || "No disponible"}</p>
+        <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar</a>
+
         <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
+        <p><strong>📞 Tel:</strong> ${p.tel_destinatario || "No disponible"}</p>
+        <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar</a>
+
         <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
-        <p><strong>💰 Precio:</strong> $${p.precio}</p>
+        <p><strong>💰 Pago producto:</strong> $${p.precio}</p>
+        <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
         <p><strong>📊 Estado:</strong> ${p.estado}</p>
 
         ${
@@ -85,29 +84,20 @@ async function cargarPedidos() {
   });
 }
 
-// Aceptar pedido
 async function aceptarPedido(id) {
   if (!repartidor) {
-    alert("Primero guarda tu nombre");
+    alert("Guarda tu nombre primero");
     return;
   }
 
-  const { error } = await supabaseClient
+  await supabaseClient
     .from("pedidos")
-    .update({
-      estado: "asignado",
-      repartidor_id: repartidor
-    })
+    .update({ estado: "asignado", repartidor_id: repartidor })
     .eq("id", id);
 
-  if (error) {
-    alert("Error ❌");
-  } else {
-    cargarPedidos();
-  }
+  cargarPedidos();
 }
 
-// Cambiar estado
 async function cambiarEstado(id, estado) {
   await supabaseClient
     .from("pedidos")
@@ -117,7 +107,6 @@ async function cambiarEstado(id, estado) {
   cargarPedidos();
 }
 
-// Abrir Google Maps
 function abrirMaps(direccion) {
   const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
   window.open(url, "_blank");
@@ -126,8 +115,7 @@ function abrirMaps(direccion) {
 // Tiempo real
 supabaseClient
   .channel("pedidos")
-  .on(
-    "postgres_changes",
+  .on("postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
     () => cargarPedidos()
   )

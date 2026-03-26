@@ -10,20 +10,14 @@ body {
   margin: auto;
 }
 
-h1 {
-  text-align: center;
-  color: #27ae60;
-}
-
 .card {
   background: white;
   padding: 15px;
   border-radius: 15px;
   margin-top: 12px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-select, button {
+button, select {
   width: 100%;
   margin-top: 8px;
   padding: 10px;
@@ -37,7 +31,17 @@ button {
 }
 
 .imagenes img {
-  width: 80px;
+  width: 90px;
   margin: 5px;
+  border-radius: 10px;
+}
+
+.btn-call {
+  display: inline-block;
+  margin: 5px 0;
+  padding: 6px 10px;
+  background: #27ae60;
+  color: white;
   border-radius: 8px;
+  text-decoration: none;
 }
