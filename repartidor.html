@@ -2,19 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Panel Repartidor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repartidor</title>
   <link rel="stylesheet" href="repartidor.css">
 </head>
+
 <body>
 
 <div class="container">
-  <h1>🛵 Pedidos disponibles</h1>
+  <h1>🛵 Pedidos</h1>
 
-  <input type="text" id="repartidorNombre" placeholder="Tu nombre">
-  <button onclick="guardarNombre()">Guardar</button>
+  <input type="text" id="nombre" placeholder="Tu nombre">
+  <button onclick="guardar()">Guardar</button>
 
   <div id="pedidos"></div>
 </div>
+
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">
+  💬
+</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="repartidor.js"></script>

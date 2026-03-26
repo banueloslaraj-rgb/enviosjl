@@ -1,8 +1,13 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #f2f4f7;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f1f3f6;
   margin: 0;
-  padding: 20px;
+  padding: 10px;
+}
+
+.container {
+  max-width: 700px;
+  margin: auto;
 }
 
 h1 {
@@ -10,50 +15,23 @@ h1 {
   color: #27ae60;
 }
 
-.container {
-  max-width: 900px;
-  margin: auto;
-}
-
 .card {
   background: white;
   padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 15px;
+  border-radius: 15px;
+  margin-top: 12px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.card p {
-  margin: 5px 0;
-}
-
-.estado {
-  font-weight: bold;
-  color: #2980b9;
-}
-
-select {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 8px;
+select, button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
 }
 
 button {
-  margin-top: 10px;
-  padding: 8px 12px;
-  border: none;
   background: #27ae60;
   color: white;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #219150;
-}
-
-img {
-  width: 80px;
-  margin: 5px;
-  border-radius: 8px;
 }

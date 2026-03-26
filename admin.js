@@ -6,81 +6,37 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const contenedor = document.getElementById("pedidos");
 
 async function cargarPedidos() {
-  contenedor.innerHTML = "Cargando...";
-
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("pedidos")
     .select("*")
     .order("fecha", { ascending: false });
 
-  if (error) {
-    contenedor.innerHTML = "Error al cargar";
-    console.error(error);
-    return;
-  }
-
   contenedor.innerHTML = "";
 
-  data.forEach(pedido => {
+  data.forEach(p => {
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
-      <p><strong>📍 Recolección:</strong> ${pedido.recoleccion}</p>
-      <p><strong>📍 Entrega:</strong> ${pedido.entrega}</p>
-      <p><strong>👤 Remitente:</strong> ${pedido.remitente}</p>
-      <p><strong>👤 Destinatario:</strong> ${pedido.destinatario}</p>
-      <p><strong>📦 Descripción:</strong> ${pedido.descripcion}</p>
-      <p><strong>💰 Precio:</strong> $${pedido.precio}</p>
-      <p class="estado">Estado: ${pedido.estado}</p>
-      
-      <select id="estado-${pedido.id}">
-        <option value="pendiente">Pendiente</option>
-        <option value="asignado">Asignado</option>
-        <option value="en camino">En camino</option>
-        <option value="entregado">Entregado</option>
+      <p>${p.recoleccion}</p>
+      <p>${p.entrega}</p>
+      <p>$${p.precio}</p>
+
+      <select onchange="actualizar('${p.id}', this.value)">
+        <option>pendiente</option>
+        <option>asignado</option>
+        <option>en camino</option>
+        <option>entregado</option>
       </select>
-
-      <button onclick="actualizarEstado('${pedido.id}')">Actualizar</button>
-
-      <div>
-        ${(pedido.fotos || []).map(f => `<img src="${f}" />`).join("")}
-      </div>
     `;
 
     contenedor.appendChild(card);
   });
 }
 
-async function actualizarEstado(id) {
-  const select = document.getElementById(`estado-${id}`);
-  const nuevoEstado = select.value;
-
-  const { error } = await supabaseClient
-    .from("pedidos")
-    .update({ estado: nuevoEstado })
-    .eq("id", id);
-
-  if (error) {
-    alert("Error al actualizar");
-    console.error(error);
-  } else {
-    alert("Estado actualizado ✅");
-    cargarPedidos();
-  }
+async function actualizar(id, estado) {
+  await supabaseClient.from("pedidos").update({ estado }).eq("id", id);
+  cargarPedidos();
 }
 
-// Cargar al inicio
 cargarPedidos();
-
-// Actualización en tiempo real 🔥
-supabaseClient
-  .channel("pedidos")
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "pedidos" },
-    () => {
-      cargarPedidos();
-    }
-  )
-  .subscribe();

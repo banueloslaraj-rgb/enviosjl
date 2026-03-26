@@ -52,13 +52,11 @@ form.addEventListener("submit", async (e) => {
 
   if (error) {
     mensaje.textContent = "Error ❌";
-    console.error(error);
     return;
   }
 
   mensaje.textContent = "Pedido enviado ✅";
 
-  // WhatsApp
   const texto = `🚚 *Nuevo pedido*
 📍 Recolección: ${recoleccion}
 📍 Entrega: ${entrega}
@@ -68,7 +66,8 @@ form.addEventListener("submit", async (e) => {
 💰 $${precio}`;
 
   const url = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
-  window.open(url, "_blank");
+
+  window.location.href = url;
 
   form.reset();
 });
