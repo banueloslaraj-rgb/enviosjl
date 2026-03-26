@@ -41,7 +41,6 @@ async function cargarPedidos() {
 
   data.forEach(p => {
 
-    // Mostrar pedidos disponibles o asignados al repartidor
     if (p.estado === "pendiente" || p.repartidor_id === repartidor) {
 
       const card = document.createElement("div");
@@ -49,7 +48,11 @@ async function cargarPedidos() {
 
       card.innerHTML = `
         <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
+        <button onclick="abrirMaps('${p.recoleccion}')">📍 Ir a recolección</button>
+
         <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
+        <button onclick="abrirMaps('${p.entrega}')">📍 Ir a entrega</button>
+
         <p><strong>👤 Envía:</strong> ${p.remitente}</p>
         <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
         <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
@@ -98,7 +101,6 @@ async function aceptarPedido(id) {
     .eq("id", id);
 
   if (error) {
-    console.error(error);
     alert("Error ❌");
   } else {
     cargarPedidos();
@@ -107,27 +109,27 @@ async function aceptarPedido(id) {
 
 // Cambiar estado
 async function cambiarEstado(id, estado) {
-  const { error } = await supabaseClient
+  await supabaseClient
     .from("pedidos")
     .update({ estado })
     .eq("id", id);
 
-  if (error) {
-    console.error(error);
-  } else {
-    cargarPedidos();
-  }
+  cargarPedidos();
 }
 
-// Tiempo real 🔥
+// Abrir Google Maps
+function abrirMaps(direccion) {
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+  window.open(url, "_blank");
+}
+
+// Tiempo real
 supabaseClient
   .channel("pedidos")
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
-    () => {
-      cargarPedidos();
-    }
+    () => cargarPedidos()
   )
   .subscribe();
 

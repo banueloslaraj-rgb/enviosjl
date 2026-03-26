@@ -27,7 +27,11 @@ async function cargarPedidos() {
 
     card.innerHTML = `
       <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
+      <button onclick="abrirMaps('${p.recoleccion}')">📍 Ver en mapa</button>
+
       <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
+      <button onclick="abrirMaps('${p.entrega}')">📍 Ver en mapa</button>
+
       <p><strong>👤 Envía:</strong> ${p.remitente}</p>
       <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
       <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
@@ -63,22 +67,24 @@ async function actualizarEstado(id) {
 
   if (error) {
     alert("Error ❌");
-    console.error(error);
   } else {
     alert("Actualizado ✅");
     cargarPedidos();
   }
 }
 
-// Tiempo real 🔥
+function abrirMaps(direccion) {
+  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+  window.open(url, "_blank");
+}
+
+// Tiempo real
 supabaseClient
   .channel("pedidos")
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
-    () => {
-      cargarPedidos();
-    }
+    () => cargarPedidos()
   )
   .subscribe();
 
