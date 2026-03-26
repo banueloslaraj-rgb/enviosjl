@@ -1,55 +1,83 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f1f3f6;
+}
+
+.app {
+  max-width: 500px;
+  margin: auto;
+  padding: 15px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+header h1 {
+  color: #27ae60;
   margin: 0;
 }
 
-.container {
+header p {
+  color: #666;
+  font-size: 14px;
+}
+
+.card {
   background: white;
-  padding: 25px;
+  padding: 20px;
   border-radius: 15px;
-  width: 350px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-h1 {
-  text-align: center;
-  color: #27ae60;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 
 input, textarea {
-  margin: 8px 0;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 14px;
 }
 
 textarea {
   resize: none;
 }
 
-button {
-  background: #27ae60;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
+.file-label {
+  display: block;
   margin-top: 10px;
+  background: #f7f7f7;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
   cursor: pointer;
+}
+
+.file-label input {
+  display: none;
+}
+
+button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
+  color: white;
+  font-size: 16px;
   font-weight: bold;
+  cursor: pointer;
 }
 
 button:hover {
-  background: #219150;
+  opacity: 0.9;
 }
 
 #mensaje {

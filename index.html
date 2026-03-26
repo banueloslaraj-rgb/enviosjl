@@ -2,35 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mandaditos Express</title>
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="container">
-  <h1>🚚 Mandaditos Express</h1>
+<div class="app">
 
-  <form id="pedidoForm">
-    <input type="text" id="recoleccion" placeholder="Dirección de recolección" required>
-    <input type="text" id="entrega" placeholder="Dirección de entrega" required>
-    <input type="text" id="remitente" placeholder="Nombre de quien envía" required>
-    <input type="text" id="destinatario" placeholder="Nombre de quien recibe" required>
+  <header>
+    <h1>🛵 Mandaditos Express</h1>
+    <p>Envíos rápidos en tu ciudad</p>
+  </header>
 
-    <textarea id="descripcion" placeholder="¿Qué se envía?" required></textarea>
+  <form id="pedidoForm" class="card">
 
-    <input type="number" id="precio" placeholder="Costo del envío ($)" required>
+    <h2>Solicitar servicio</h2>
 
-    <label>Subir fotos del envío</label>
-    <input type="file" id="fotos" multiple>
+    <input type="text" id="recoleccion" placeholder="📍 Dirección de recolección" required>
+    <input type="text" id="entrega" placeholder="📍 Dirección de entrega" required>
+    <input type="text" id="remitente" placeholder="👤 Quién envía" required>
+    <input type="text" id="destinatario" placeholder="👤 Quién recibe" required>
 
-    <button type="submit">Solicitar servicio</button>
+    <textarea id="descripcion" placeholder="📦 ¿Qué se envía?" required></textarea>
+
+    <input type="number" id="precio" placeholder="💰 Costo del envío" required>
+
+    <label class="file-label">
+      📸 Subir fotos
+      <input type="file" id="fotos" multiple>
+    </label>
+
+    <button type="submit">Solicitar ahora</button>
+
   </form>
 
   <p id="mensaje"></p>
+
 </div>
+
+</body>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="app.js"></script>
 
-</body>
 </html>
