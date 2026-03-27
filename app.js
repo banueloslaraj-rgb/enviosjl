@@ -223,7 +223,7 @@ form.addEventListener("submit", async (e) => {
         
         console.log("Pedido guardado exitosamente:", pedidoGuardado);
         
-        // Preparar mensaje para WhatsApp CON EMOJIS ORIGINALES
+        // Preparar mensaje para WhatsApp CON TODOS LOS EMOJIS ORIGINALES
         const texto = `🚚 Nuevo pedido
 📍 ${datos.recoleccion} → ${datos.entrega}
 👤 ${datos.remitente} (${datos.tel_remitente})
@@ -266,13 +266,13 @@ form.addEventListener("submit", async (e) => {
         // Mostrar mensaje de error detallado
         let mensajeError = error.message || "❌ Error al enviar. Intenta de nuevo.";
         
-        // Mensajes más amigables
+        // Mensajes más amigables con emojis
         if (mensajeError.includes("duplicate key")) {
             mensajeError = "❌ Error de duplicado. Intenta de nuevo.";
         } else if (mensajeError.includes("network")) {
-            mensajeError = "❌ Error de red. Verifica tu conexión.";
+            mensajeError = "❌ Error de red. Verifica tu conexión a internet.";
         } else if (mensajeError.includes("storage")) {
-            mensajeError = "❌ Error al subir imágenes. Intenta con menos fotos o imágenes más pequeñas.";
+            mensajeError = "📸 Error al subir imágenes. Intenta con menos fotos o imágenes más pequeñas.";
         }
         
         mostrarMensaje(mensajeError, "error");
