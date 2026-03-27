@@ -8,149 +8,266 @@ let isSubmitting = false;
 
 // Distancia simulada
 function calcularDistancia() {
-  return Math.floor(Math.random() * 6) + 1;
+    return Math.floor(Math.random() * 6) + 1;
 }
 
 // Calcular envío
 function calcularEnvio(distancia, pago) {
-  let costo = 0;
+    let costo = 0;
 
-  if (distancia <= 2) costo = 40;
-  else if (distancia <= 5) costo = 55;
-  else costo = 70;
+    if (distancia <= 2) costo = 40;
+    else if (distancia <= 5) costo = 55;
+    else costo = 70;
 
-  costo += Math.floor(pago / 1000) * 10;
+    costo += Math.floor(pago / 1000) * 10;
 
-  return costo;
+    return costo;
 }
 
 // Actualizar envío
 function actualizarEnvio() {
-  const pago = parseFloat(document.getElementById("pago").value || 0);
-  if (!pago) return;
+    const pago = parseFloat(document.getElementById("pago").value || 0);
+    if (!pago && pago !== 0) return;
 
-  const distancia = calcularDistancia();
-  const envio = calcularEnvio(distancia, pago);
+    const distancia = calcularDistancia();
+    const envio = calcularEnvio(distancia, pago);
 
-  document.getElementById("envioCalculado").value = `$${envio} aprox (${distancia} km)`;
+    document.getElementById("envioCalculado").value = `$${envio} aprox (${distancia} km)`;
 }
 
-document.getElementById("pago").addEventListener("input", actualizarEnvio);
+// Configurar evento del campo pago
+const pagoInput = document.getElementById("pago");
+if (pagoInput) {
+    pagoInput.addEventListener("input", actualizarEnvio);
+}
+
+// Función para mostrar mensaje
+function mostrarMensaje(texto, tipo) {
+    const mensajeDiv = document.getElementById("mensaje");
+    if (!mensajeDiv) return;
+    
+    mensajeDiv.textContent = texto;
+    mensajeDiv.style.color = tipo === "error" ? "#dc3545" : "#28a745";
+    mensajeDiv.style.fontWeight = "bold";
+    mensajeDiv.style.display = "block";
+    
+    setTimeout(() => {
+        mensajeDiv.style.display = "none";
+        mensajeDiv.textContent = "";
+    }, 5000);
+}
+
+// Función para subir una imagen individual
+async function subirImagen(file) {
+    if (!file) return null;
+    
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    try {
+        const { error } = await supabaseClient.storage
+            .from("fotos")
+            .upload(fileName, file);
+        
+        if (error) {
+            console.error("Error subiendo imagen:", error);
+            return null;
+        }
+        
+        const { data } = supabaseClient.storage
+            .from("fotos")
+            .getPublicUrl(fileName);
+        
+        return data.publicUrl;
+    } catch (error) {
+        console.error("Error en subida:", error);
+        return null;
+    }
+}
+
+// Función para subir múltiples imágenes
+async function subirImagenes(files) {
+    if (!files || files.length === 0) return [];
+    
+    const urls = [];
+    for (const file of files) {
+        const url = await subirImagen(file);
+        if (url) {
+            urls.push(url);
+        }
+    }
+    return urls;
+}
 
 const form = document.getElementById("pedidoForm");
 
 form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  
-  // Prevenir doble clic
-  if (isSubmitting) {
-    const mensaje = document.getElementById("mensaje");
-    mensaje.textContent = "⏳ Ya se está enviando, por favor espera...";
-    mensaje.style.color = "#ffc107";
-    setTimeout(() => {
-      mensaje.textContent = "";
-    }, 2000);
-    return;
-  }
-  
-  // Bloquear el botón
-  isSubmitting = true;
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const textoOriginal = submitBtn.textContent;
-  submitBtn.textContent = "⏳ Enviando...";
-  submitBtn.disabled = true;
-
-  try {
-    const fotosInput = document.getElementById("fotos");
-    let fotosUrls = [];
-
-    // Subir imágenes
-    for (let file of fotosInput.files) {
-      const fileName = Date.now() + "-" + file.name;
-
-      const { error } = await supabaseClient.storage
-        .from("fotos")
-        .upload(fileName, file);
-
-      if (!error) {
-        const { data } = supabaseClient.storage
-          .from("fotos")
-          .getPublicUrl(fileName);
-
-        fotosUrls.push(data.publicUrl);
-      }
+    e.preventDefault();
+    
+    // Prevenir doble clic
+    if (isSubmitting) {
+        mostrarMensaje("⏳ Ya se está enviando, por favor espera...", "error");
+        return;
     }
-
-    const datos = {
-      recoleccion: recoleccion.value,
-      entrega: entrega.value,
-      remitente: remitente.value,
-      destinatario: destinatario.value,
-      descripcion: descripcion.value,
-      precio: pago.value,
-      tel_remitente: telRemitente.value,
-      tel_destinatario: telDestinatario.value,
-      envio: envioCalculado.value,
-      fotos: fotosUrls,
-      estado: "pendiente",
-      fecha: new Date().toISOString()
-    };
-
-    const { data } = await supabaseClient.from("pedidos").insert([datos]).select();
-
-    const texto = `🚚 Nuevo pedido
+    
+    // Bloquear el botón
+    isSubmitting = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const textoOriginal = submitBtn.textContent;
+    submitBtn.textContent = "⏳ Enviando pedido...";
+    submitBtn.disabled = true;
+    
+    // Ocultar mensaje anterior
+    const mensajeDiv = document.getElementById("mensaje");
+    if (mensajeDiv) mensajeDiv.style.display = "none";
+    
+    try {
+        // Obtener referencias de los inputs
+        const recoleccion = document.getElementById("recoleccion");
+        const entrega = document.getElementById("entrega");
+        const remitente = document.getElementById("remitente");
+        const destinatario = document.getElementById("destinatario");
+        const descripcion = document.getElementById("descripcion");
+        const pago = document.getElementById("pago");
+        const telRemitente = document.getElementById("telRemitente");
+        const telDestinatario = document.getElementById("telDestinatario");
+        const envioCalculado = document.getElementById("envioCalculado");
+        const fotosInput = document.getElementById("fotos");
+        
+        // Validar campos requeridos
+        if (!recoleccion.value.trim()) throw new Error("📍 La dirección de recolección es requerida");
+        if (!entrega.value.trim()) throw new Error("📍 La dirección de entrega es requerida");
+        if (!remitente.value.trim()) throw new Error("👤 El nombre del remitente es requerido");
+        if (!destinatario.value.trim()) throw new Error("👤 El nombre del destinatario es requerido");
+        if (!descripcion.value.trim()) throw new Error("📦 La descripción es requerida");
+        if (!pago.value.trim()) throw new Error("💰 El pago del producto es requerido");
+        if (!telRemitente.value.trim()) throw new Error("📞 El teléfono del remitente es requerido");
+        if (!telDestinatario.value.trim()) throw new Error("📞 El teléfono del destinatario es requerido");
+        
+        // Mostrar mensaje de subida de imágenes
+        if (fotosInput.files.length > 0) {
+            mostrarMensaje(`📸 Subiendo ${fotosInput.files.length} imagen(es)...`, "info");
+            submitBtn.textContent = "⏳ Subiendo imágenes...";
+        }
+        
+        // Subir imágenes (si hay)
+        const fotosUrls = await subirImagenes(fotosInput.files);
+        
+        console.log("Imágenes subidas:", fotosUrls.length);
+        
+        // Calcular envío si no está calculado
+        let envioTexto = envioCalculado.value;
+        if (!envioTexto) {
+            const pagoValue = parseFloat(pago.value) || 0;
+            const distancia = calcularDistancia();
+            const envio = calcularEnvio(distancia, pagoValue);
+            envioTexto = `$${envio} aprox (${distancia} km)`;
+        }
+        
+        // Preparar datos
+        const datos = {
+            recoleccion: recoleccion.value.trim(),
+            entrega: entrega.value.trim(),
+            remitente: remitente.value.trim(),
+            destinatario: destinatario.value.trim(),
+            descripcion: descripcion.value.trim(),
+            precio: pago.value.trim(),
+            tel_remitente: telRemitente.value.trim(),
+            tel_destinatario: telDestinatario.value.trim(),
+            envio: envioTexto,
+            fotos: fotosUrls,
+            estado: "pendiente",
+            fecha: new Date().toISOString()
+        };
+        
+        console.log("Guardando pedido en Supabase...");
+        
+        // Guardar en Supabase
+        const { data: pedidoGuardado, error: insertError } = await supabaseClient
+            .from("pedidos")
+            .insert([datos])
+            .select();
+        
+        if (insertError) {
+            console.error("Error Supabase:", insertError);
+            throw new Error(`Error al guardar: ${insertError.message}`);
+        }
+        
+        console.log("Pedido guardado exitosamente:", pedidoGuardado);
+        
+        // Preparar mensaje para WhatsApp CON EMOJIS ORIGINALES
+        const texto = `🚚 Nuevo pedido
 📍 ${datos.recoleccion} → ${datos.entrega}
 👤 ${datos.remitente} (${datos.tel_remitente})
 👤 ${datos.destinatario} (${datos.tel_destinatario})
 📦 ${datos.descripcion}
 💰 $${datos.precio}
 🚚 Envío: ${datos.envio}`;
-
-    // Mostrar mensaje de éxito
-    const mensaje = document.getElementById("mensaje");
-    mensaje.textContent = "✅ ¡Pedido enviado con éxito! Redirigiendo a WhatsApp...";
-    mensaje.style.color = "#28a745";
-    mensaje.style.fontWeight = "bold";
-    
-    window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
-    
-  } catch (error) {
-    console.error("Error:", error);
-    
-    // Mostrar mensaje de error
-    const mensaje = document.getElementById("mensaje");
-    mensaje.textContent = "❌ Error al enviar. Intenta de nuevo.";
-    mensaje.style.color = "#dc3545";
-    mensaje.style.fontWeight = "bold";
-    
-    // Restaurar botón
-    isSubmitting = false;
-    submitBtn.textContent = textoOriginal;
-    submitBtn.disabled = false;
-    
-    // Limpiar mensaje después de 3 segundos
-    setTimeout(() => {
-      mensaje.textContent = "";
-    }, 3000);
-  }
+        
+        // Mostrar mensaje de éxito
+        mostrarMensaje("✅ ¡Pedido enviado con éxito! Redirigiendo a WhatsApp...", "success");
+        
+        // Limpiar el formulario
+        form.reset();
+        
+        // Pequeño delay antes de redirigir para asegurar que el mensaje se vea
+        setTimeout(() => {
+            // Redirigir a WhatsApp
+            window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
+        }, 1500);
+        
+    } catch (error) {
+        console.error("Error completo:", error);
+        
+        // Mostrar mensaje de error detallado
+        let mensajeError = error.message || "❌ Error al enviar. Intenta de nuevo.";
+        
+        // Mensajes más amigables
+        if (mensajeError.includes("duplicate key")) {
+            mensajeError = "❌ Error de duplicado. Intenta de nuevo.";
+        } else if (mensajeError.includes("network")) {
+            mensajeError = "❌ Error de red. Verifica tu conexión.";
+        } else if (mensajeError.includes("storage")) {
+            mensajeError = "❌ Error al subir imágenes. Intenta con menos fotos o imágenes más pequeñas.";
+        }
+        
+        mostrarMensaje(mensajeError, "error");
+        
+        // Restaurar botón
+        isSubmitting = false;
+        submitBtn.textContent = textoOriginal;
+        submitBtn.disabled = false;
+    }
 });
 
 // Mostrar feedback al seleccionar imágenes
 const fotosInput = document.getElementById("fotos");
-fotosInput.addEventListener("change", function() {
-  const fileLabel = document.querySelector(".file-label");
-  const cantidad = this.files.length;
-  
-  if (cantidad > 0) {
-    const textoOriginal = fileLabel.innerHTML;
-    fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s)`;
-    fileLabel.style.background = "#d4edda";
-    fileLabel.style.borderColor = "#28a745";
-    
-    setTimeout(() => {
-      fileLabel.innerHTML = textoOriginal;
-      fileLabel.style.background = "";
-      fileLabel.style.borderColor = "";
-    }, 2000);
-  }
-});
+if (fotosInput) {
+    fotosInput.addEventListener("change", function() {
+        const fileLabel = document.querySelector(".file-label");
+        const cantidad = this.files.length;
+        
+        if (cantidad > 0 && fileLabel) {
+            const textoOriginal = fileLabel.innerHTML.split('<')[0];
+            fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s)`;
+            fileLabel.style.background = "#d4edda";
+            fileLabel.style.borderColor = "#28a745";
+            
+            setTimeout(() => {
+                fileLabel.innerHTML = `📸 Subir fotos
+                    <input type="file" id="fotos" multiple>`;
+                fileLabel.style.background = "";
+                fileLabel.style.borderColor = "";
+                // Reasignar el evento al input regenerado
+                const newInput = document.getElementById("fotos");
+                if (newInput) {
+                    newInput.addEventListener("change", arguments.callee);
+                }
+            }, 2000);
+        }
+    });
+}
+
+// Calcular envío inicial si hay valor en pago
+if (pagoInput && pagoInput.value) {
+    actualizarEnvio();
+}
