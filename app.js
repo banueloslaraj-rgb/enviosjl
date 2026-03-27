@@ -89,13 +89,43 @@ async function subirImagenes(files) {
     if (!files || files.length === 0) return [];
     
     const urls = [];
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const url = await subirImagen(file);
         if (url) {
             urls.push(url);
         }
     }
     return urls;
+}
+
+// Función para actualizar el label de fotos
+function actualizarLabelFotos(input) {
+    const fileLabel = document.querySelector(".file-label");
+    if (!fileLabel) return;
+    
+    const cantidad = input.files.length;
+    
+    if (cantidad > 0) {
+        const textoOriginal = fileLabel.getAttribute("data-original") || "📸 Subir fotos";
+        fileLabel.setAttribute("data-original", textoOriginal);
+        fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) <span style="font-size:11px; display:block;">✅ Listo para enviar</span>`;
+        fileLabel.style.background = "#d4edda";
+        fileLabel.style.borderColor = "#28a745";
+    } else {
+        const textoOriginal = fileLabel.getAttribute("data-original") || "📸 Subir fotos";
+        fileLabel.innerHTML = `${textoOriginal}
+            <input type="file" id="fotos" multiple accept="image/*">`;
+        fileLabel.style.background = "";
+        fileLabel.style.borderColor = "";
+        // Reasignar el evento al nuevo input
+        const newInput = document.getElementById("fotos");
+        if (newInput) {
+            newInput.addEventListener("change", function() {
+                actualizarLabelFotos(this);
+            });
+        }
+    }
 }
 
 const form = document.getElementById("pedidoForm");
@@ -143,16 +173,14 @@ form.addEventListener("submit", async (e) => {
         if (!telRemitente.value.trim()) throw new Error("📞 El teléfono del remitente es requerido");
         if (!telDestinatario.value.trim()) throw new Error("📞 El teléfono del destinatario es requerido");
         
-        // Mostrar mensaje de subida de imágenes
-        if (fotosInput.files.length > 0) {
+        // Subir imágenes (verificar que fotosInput existe)
+        let fotosUrls = [];
+        if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
             mostrarMensaje(`📸 Subiendo ${fotosInput.files.length} imagen(es)...`, "info");
             submitBtn.textContent = "⏳ Subiendo imágenes...";
+            fotosUrls = await subirImagenes(fotosInput.files);
+            console.log("Imágenes subidas:", fotosUrls.length);
         }
-        
-        // Subir imágenes (si hay)
-        const fotosUrls = await subirImagenes(fotosInput.files);
-        
-        console.log("Imágenes subidas:", fotosUrls.length);
         
         // Calcular envío si no está calculado
         let envioTexto = envioCalculado.value;
@@ -180,6 +208,7 @@ form.addEventListener("submit", async (e) => {
         };
         
         console.log("Guardando pedido en Supabase...");
+        submitBtn.textContent = "⏳ Guardando pedido...";
         
         // Guardar en Supabase
         const { data: pedidoGuardado, error: insertError } = await supabaseClient
@@ -208,6 +237,22 @@ form.addEventListener("submit", async (e) => {
         
         // Limpiar el formulario
         form.reset();
+        
+        // Resetear el label de fotos
+        const fileLabel = document.querySelector(".file-label");
+        if (fileLabel) {
+            fileLabel.innerHTML = `📸 Subir fotos
+                <input type="file" id="fotos" multiple accept="image/*">`;
+            fileLabel.style.background = "";
+            fileLabel.style.borderColor = "";
+            // Reasignar el evento al nuevo input
+            const newInput = document.getElementById("fotos");
+            if (newInput) {
+                newInput.addEventListener("change", function() {
+                    actualizarLabelFotos(this);
+                });
+            }
+        }
         
         // Pequeño delay antes de redirigir para asegurar que el mensaje se vea
         setTimeout(() => {
@@ -239,31 +284,11 @@ form.addEventListener("submit", async (e) => {
     }
 });
 
-// Mostrar feedback al seleccionar imágenes
-const fotosInput = document.getElementById("fotos");
-if (fotosInput) {
-    fotosInput.addEventListener("change", function() {
-        const fileLabel = document.querySelector(".file-label");
-        const cantidad = this.files.length;
-        
-        if (cantidad > 0 && fileLabel) {
-            const textoOriginal = fileLabel.innerHTML.split('<')[0];
-            fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s)`;
-            fileLabel.style.background = "#d4edda";
-            fileLabel.style.borderColor = "#28a745";
-            
-            setTimeout(() => {
-                fileLabel.innerHTML = `📸 Subir fotos
-                    <input type="file" id="fotos" multiple>`;
-                fileLabel.style.background = "";
-                fileLabel.style.borderColor = "";
-                // Reasignar el evento al input regenerado
-                const newInput = document.getElementById("fotos");
-                if (newInput) {
-                    newInput.addEventListener("change", arguments.callee);
-                }
-            }, 2000);
-        }
+// Configurar el evento de cambio de fotos INICIAL
+const fotosInputInicial = document.getElementById("fotos");
+if (fotosInputInicial) {
+    fotosInputInicial.addEventListener("change", function() {
+        actualizarLabelFotos(this);
     });
 }
 
