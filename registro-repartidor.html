@@ -5,342 +5,280 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Registro Repartidor - Mandaditos Express</title>
     <link rel="stylesheet" href="registro-repartidor.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="app">
-    <!-- Header con efecto glassmorphism -->
-    <div class="glass-header">
-        <div class="header-content">
-            <div class="logo-animation">
-                <span class="logo-icon">🛵</span>
-                <h1>Mandaditos Express</h1>
-            </div>
-            <p class="tagline">Únete a nuestro equipo de repartidores</p>
-            <a href="index.html" class="back-home">
-                <span>←</span> Volver al inicio
-            </a>
-        </div>
-    </div>
+    <header>
+        <h1>🛵 Mandaditos Express</h1>
+        <p>Registro de repartidores</p>
+        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    </header>
 
-    <!-- Tarjeta principal flotante -->
-    <div class="floating-card">
-        <!-- Stepper visual -->
-        <div class="stepper">
-            <div class="step-item active" data-step="1">
-                <div class="step-marker">
-                    <span class="step-number">1</span>
-                    <div class="step-check">✓</div>
-                </div>
-                <div class="step-info">
-                    <span class="step-title">Datos personales</span>
-                    <span class="step-desc">Tu información básica</span>
-                </div>
+    <form id="registroForm" class="card">
+        <!-- Barra de progreso -->
+        <div class="progress-steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Datos personales</div>
             </div>
             <div class="step-line"></div>
-            <div class="step-item" data-step="2">
-                <div class="step-marker">
-                    <span class="step-number">2</span>
-                    <div class="step-check">✓</div>
-                </div>
-                <div class="step-info">
-                    <span class="step-title">Documentos</span>
-                    <span class="step-desc">Verificación oficial</span>
-                </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Documentos</div>
             </div>
             <div class="step-line"></div>
-            <div class="step-item" data-step="3">
-                <div class="step-marker">
-                    <span class="step-number">3</span>
-                    <div class="step-check">✓</div>
-                </div>
-                <div class="step-info">
-                    <span class="step-title">Tu vehículo</span>
-                    <span class="step-desc">Medio de transporte</span>
-                </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Vehículo</div>
             </div>
         </div>
 
-        <!-- Formulario con secciones animadas -->
-        <div class="form-wrapper">
-            <!-- Sección 1 -->
-            <div class="form-panel active" id="panel1">
-                <div class="panel-header">
-                    <div class="header-badge">Paso 1 de 3</div>
-                    <h2>👤 Datos personales</h2>
-                    <p>Cuéntanos quién eres para comenzar tu registro</p>
-                </div>
-
-                <div class="input-card">
-                    <div class="input-icon">👤</div>
-                    <div class="input-field">
-                        <label>Nombre completo <span class="required">*</span></label>
-                        <input type="text" id="nombreCompleto" placeholder="Juan Pérez González">
-                        <small>Ingresa tu nombre como aparece en tu identificación</small>
-                    </div>
-                </div>
-
-                <div class="input-card">
-                    <div class="input-icon">📞</div>
-                    <div class="input-field">
-                        <label>Teléfono <span class="required">*</span></label>
-                        <input type="tel" id="telefono" placeholder="311 123 4567" maxlength="10">
-                        <small>Número de WhatsApp para recibir notificaciones</small>
-                    </div>
-                </div>
-
-                <div class="input-card optional-card">
-                    <div class="input-icon">✉️</div>
-                    <div class="input-field">
-                        <label>Correo electrónico <span class="optional-badge">Opcional</span></label>
-                        <input type="email" id="email" placeholder="tuemail@ejemplo.com">
-                        <small>Para enviarte información importante</small>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn-continue" onclick="nextStep()">
-                        Continuar
-                        <span class="btn-arrow">→</span>
-                    </button>
-                </div>
+        <!-- Sección 1: Datos personales -->
+        <div class="form-section active" id="section1">
+            <div class="section-header">
+                <h2>📋 Datos personales</h2>
+                <p>Información básica para contactarte</p>
+            </div>
+            
+            <div class="input-group">
+                <label>Nombre completo <span class="required">*</span></label>
+                <input type="text" id="nombreCompleto" placeholder="Ej: Juan Pérez González" required>
+                <small>Ingresa tu nombre tal como aparece en tu identificación</small>
             </div>
 
-            <!-- Sección 2 -->
-            <div class="form-panel" id="panel2">
-                <div class="panel-header">
-                    <div class="header-badge">Paso 2 de 3</div>
-                    <h2>📄 Documentos requeridos</h2>
-                    <p>Sube tus documentos oficiales para verificar tu identidad</p>
-                </div>
+            <div class="input-group">
+                <label>Teléfono <span class="required">*</span></label>
+                <input type="tel" id="telefono" placeholder="10 dígitos, ej: 3111234567" required pattern="[0-9]{10}">
+                <small>Número de WhatsApp para recibir notificaciones</small>
+            </div>
 
-                <div class="upload-card">
-                    <div class="upload-icon">🪪</div>
-                    <div class="upload-info">
-                        <h4>Credencial de elector (Frente)</h4>
-                        <p>INE, IFE o identificación oficial</p>
+            <div class="input-group">
+                <label>Correo electrónico <span class="optional">(Opcional)</span></label>
+                <input type="email" id="email" placeholder="tucorreo@ejemplo.com">
+                <small>Para enviarte información importante</small>
+            </div>
+
+            <button type="button" class="btn-next" onclick="nextSection(2)">Continuar →</button>
+        </div>
+
+        <!-- Sección 2: Documentos -->
+        <div class="form-section" id="section2">
+            <div class="section-header">
+                <h2>📄 Documentos requeridos</h2>
+                <p>Sube los documentos oficiales para tu registro</p>
+            </div>
+            
+            <div class="docs-container">
+                <div class="doc-card">
+                    <div class="doc-icon">🪪</div>
+                    <div class="doc-content">
+                        <strong>Credencial de elector (Frente)</strong>
+                        <span>INE, IFE o identificación oficial</span>
                     </div>
-                    <label class="upload-btn">
-                        📸 Subir archivo
-                        <input type="file" id="credencialFrente" accept="image/*">
+                    <label class="file-btn">
+                        📸 Seleccionar archivo
+                        <input type="file" id="credencialFrente" accept="image/*" required>
                     </label>
-                    <span class="upload-filename" id="credencialFrenteName"></span>
+                    <span class="file-name" id="credencialFrenteName"></span>
                 </div>
 
-                <div class="upload-card">
-                    <div class="upload-icon">🪪</div>
-                    <div class="upload-info">
-                        <h4>Credencial de elector (Reverso)</h4>
-                        <p>Parte trasera de tu identificación</p>
+                <div class="doc-card">
+                    <div class="doc-icon">🪪</div>
+                    <div class="doc-content">
+                        <strong>Credencial de elector (Reverso)</strong>
+                        <span>Parte trasera de tu identificación</span>
                     </div>
-                    <label class="upload-btn">
-                        📸 Subir archivo
-                        <input type="file" id="credencialReverso" accept="image/*">
+                    <label class="file-btn">
+                        📸 Seleccionar archivo
+                        <input type="file" id="credencialReverso" accept="image/*" required>
                     </label>
-                    <span class="upload-filename" id="credencialReversoName"></span>
+                    <span class="file-name" id="credencialReversoName"></span>
                 </div>
 
-                <div class="upload-card">
-                    <div class="upload-icon">🏠</div>
-                    <div class="upload-info">
-                        <h4>Comprobante de domicilio</h4>
-                        <p>Agua, luz, teléfono o predial (últimos 3 meses)</p>
+                <div class="doc-card">
+                    <div class="doc-icon">🏠</div>
+                    <div class="doc-content">
+                        <strong>Comprobante de domicilio</strong>
+                        <span>Agua, luz, teléfono o predial (últimos 3 meses)</span>
                     </div>
-                    <label class="upload-btn">
-                        📄 Subir archivo
-                        <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf">
+                    <label class="file-btn">
+                        📄 Seleccionar archivo
+                        <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
                     </label>
-                    <span class="upload-filename" id="comprobanteDomicilioName"></span>
+                    <span class="file-name" id="comprobanteDomicilioName"></span>
                 </div>
 
-                <div class="upload-card optional-upload">
-                    <div class="upload-icon">🚗</div>
-                    <div class="upload-info">
-                        <h4>Licencia de conducir <span class="optional-tag">Opcional</span></h4>
-                        <p>Recomendado para agilizar tu registro</p>
+                <div class="doc-card optional">
+                    <div class="doc-icon">🚗</div>
+                    <div class="doc-content">
+                        <strong>Licencia de conducir</strong>
+                        <span>Opcional - Recomendado</span>
                     </div>
-                    <label class="upload-btn">
-                        🚗 Subir archivo
+                    <label class="file-btn">
+                        🚗 Seleccionar archivo
                         <input type="file" id="licencia" accept="image/*">
                     </label>
-                    <span class="upload-filename" id="licenciaName"></span>
-                </div>
-
-                <div class="action-buttons dual">
-                    <button class="btn-back" onclick="prevStep()">
-                        <span class="btn-arrow">←</span> Anterior
-                    </button>
-                    <button class="btn-continue" onclick="nextStep()">
-                        Continuar <span class="btn-arrow">→</span>
-                    </button>
+                    <span class="file-name" id="licenciaName"></span>
                 </div>
             </div>
 
-            <!-- Sección 3 -->
-            <div class="form-panel" id="panel3">
-                <div class="panel-header">
-                    <div class="header-badge">Paso 3 de 3</div>
-                    <h2>🚘 Datos del vehículo</h2>
-                    <p>Cuéntanos sobre tu medio de transporte</p>
-                </div>
-
-                <div class="two-column-grid">
-                    <div class="input-card">
-                        <div class="input-icon">🚘</div>
-                        <div class="input-field">
-                            <label>Marca y modelo <span class="required">*</span></label>
-                            <input type="text" id="marcaVehiculo" placeholder="Ej: Honda Cargo 150">
-                        </div>
-                    </div>
-
-                    <div class="input-card">
-                        <div class="input-icon">🎨</div>
-                        <div class="input-field">
-                            <label>Color <span class="required">*</span></label>
-                            <input type="text" id="colorVehiculo" placeholder="Ej: Rojo, Azul, Negro">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="upload-card">
-                    <div class="upload-icon">📸</div>
-                    <div class="upload-info">
-                        <h4>Foto del vehículo</h4>
-                        <p>Muestra tu vehículo completo, debe verse la placa</p>
-                    </div>
-                    <label class="upload-btn primary">
-                        📷 Tomar foto / Subir
-                        <input type="file" id="fotoVehiculo" accept="image/*">
-                    </label>
-                    <span class="upload-filename" id="fotoVehiculoName"></span>
-                </div>
-
-                <div class="upload-card">
-                    <div class="upload-icon">🔢</div>
-                    <div class="upload-info">
-                        <h4>Foto de placas</h4>
-                        <p>Placas del vehículo claramente visibles</p>
-                    </div>
-                    <label class="upload-btn primary">
-                        🔢 Subir foto de placas
-                        <input type="file" id="fotoPlacas" accept="image/*">
-                    </label>
-                    <span class="upload-filename" id="fotoPlacasName"></span>
-                </div>
-
-                <div class="action-buttons dual">
-                    <button class="btn-back" onclick="prevStep()">
-                        <span class="btn-arrow">←</span> Anterior
-                    </button>
-                    <button class="btn-submit-final" id="submitBtn">
-                        ✅ Registrar como repartidor
-                        <span class="btn-sparkle">✨</span>
-                    </button>
-                </div>
+            <div class="button-group">
+                <button type="button" class="btn-back" onclick="prevSection(1)">← Anterior</button>
+                <button type="button" class="btn-next" onclick="nextSection(3)">Continuar →</button>
             </div>
         </div>
-    </div>
 
-    <div id="mensaje" class="message-toast"></div>
+        <!-- Sección 3: Datos del vehículo -->
+        <div class="form-section" id="section3">
+            <div class="section-header">
+                <h2>🚘 Datos del vehículo</h2>
+                <p>Cuéntanos sobre tu medio de transporte</p>
+            </div>
+            
+            <div class="two-columns">
+                <div class="input-group">
+                    <label>Marca y modelo <span class="required">*</span></label>
+                    <input type="text" id="marcaVehiculo" placeholder="Ej: Honda Cargo 150" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Color <span class="required">*</span></label>
+                    <input type="text" id="colorVehiculo" placeholder="Ej: Rojo, Azul, Negro" required>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <div class="doc-icon">📸</div>
+                <div class="doc-content">
+                    <strong>Foto del vehículo</strong>
+                    <span>Muestra tu vehículo completo, debe verse la placa</span>
+                </div>
+                <label class="file-btn primary">
+                    📷 Tomar foto / Subir
+                    <input type="file" id="fotoVehiculo" accept="image/*" required>
+                </label>
+                <span class="file-name" id="fotoVehiculoName"></span>
+            </div>
+
+            <div class="doc-card">
+                <div class="doc-icon">🔢</div>
+                <div class="doc-content">
+                    <strong>Foto de placas</strong>
+                    <span>Placas del vehículo claramente visibles</span>
+                </div>
+                <label class="file-btn primary">
+                    🔢 Subir foto de placas
+                    <input type="file" id="fotoPlacas" accept="image/*" required>
+                </label>
+                <span class="file-name" id="fotoPlacasName"></span>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-back" onclick="prevSection(2)">← Anterior</button>
+                <button type="submit" class="btn-submit">✅ Registrar como repartidor</button>
+            </div>
+        </div>
+    </form>
+    
+    <div id="mensaje" class="mensaje"></div>
 </div>
 
-<a href="https://wa.me/5213111063251" class="whatsapp-float" target="_blank">
-    <span>💬</span>
-</a>
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="registro-repartidor.js"></script>
 
 <script>
-    let currentStep = 1;
-    let isSubmitting = false;
+    let currentSection = 1;
 
-    function updateStepper() {
-        document.querySelectorAll('.step-item').forEach((step, index) => {
-            const stepNum = index + 1;
-            if (stepNum < currentStep) {
+    function nextSection(section) {
+        if (section === 2 && !validateSection1()) return;
+        if (section === 3 && !validateSection2()) return;
+        
+        document.getElementById(`section${currentSection}`).classList.remove('active');
+        document.getElementById(`section${section}`).classList.add('active');
+        
+        // Actualizar steps
+        document.querySelectorAll('.step').forEach((step, index) => {
+            if (index + 1 === section) {
+                step.classList.add('active');
+            } else if (index + 1 < section) {
                 step.classList.add('completed');
                 step.classList.remove('active');
-            } else if (stepNum === currentStep) {
-                step.classList.add('active');
-                step.classList.remove('completed');
             } else {
                 step.classList.remove('active', 'completed');
             }
         });
         
-        document.querySelectorAll('.form-panel').forEach((panel, index) => {
-            if (index + 1 === currentStep) {
-                panel.classList.add('active');
-            } else {
-                panel.classList.remove('active');
-            }
-        });
+        currentSection = section;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function validateStep1() {
+    function prevSection(section) {
+        document.getElementById(`section${currentSection}`).classList.remove('active');
+        document.getElementById(`section${section}`).classList.add('active');
+        
+        document.querySelectorAll('.step').forEach((step, index) => {
+            if (index + 1 === section) {
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+            if (index + 1 < section) {
+                step.classList.add('completed');
+            } else {
+                step.classList.remove('completed');
+            }
+        });
+        
+        currentSection = section;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function validateSection1() {
         const nombre = document.getElementById('nombreCompleto').value.trim();
         const telefono = document.getElementById('telefono').value.trim();
         
         if (!nombre) {
-            showMessage('❌ Por favor ingresa tu nombre completo', 'error');
+            mostrarMensaje('❌ Por favor ingresa tu nombre completo', 'error');
             return false;
         }
         if (!telefono) {
-            showMessage('❌ Por favor ingresa tu número de teléfono', 'error');
+            mostrarMensaje('❌ Por favor ingresa tu número de teléfono', 'error');
             return false;
         }
         if (!/^\d{10}$/.test(telefono)) {
-            showMessage('❌ El teléfono debe tener 10 dígitos', 'error');
+            mostrarMensaje('❌ El teléfono debe tener 10 dígitos', 'error');
             return false;
         }
         return true;
     }
 
-    function validateStep2() {
+    function validateSection2() {
         const credFrente = document.getElementById('credencialFrente').files[0];
         const credReverso = document.getElementById('credencialReverso').files[0];
         const comprobante = document.getElementById('comprobanteDomicilio').files[0];
         
         if (!credFrente) {
-            showMessage('❌ Por favor sube el frente de tu credencial', 'error');
+            mostrarMensaje('❌ Por favor sube el frente de tu credencial', 'error');
             return false;
         }
         if (!credReverso) {
-            showMessage('❌ Por favor sube el reverso de tu credencial', 'error');
+            mostrarMensaje('❌ Por favor sube el reverso de tu credencial', 'error');
             return false;
         }
         if (!comprobante) {
-            showMessage('❌ Por favor sube tu comprobante de domicilio', 'error');
+            mostrarMensaje('❌ Por favor sube tu comprobante de domicilio', 'error');
             return false;
         }
         return true;
     }
 
-    function nextStep() {
-        if (currentStep === 1 && !validateStep1()) return;
-        if (currentStep === 2 && !validateStep2()) return;
-        
-        if (currentStep < 3) {
-            currentStep++;
-            updateStepper();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    function prevStep() {
-        if (currentStep > 1) {
-            currentStep--;
-            updateStepper();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    function showMessage(text, type) {
+    function mostrarMensaje(texto, tipo) {
         const msgDiv = document.getElementById('mensaje');
-        msgDiv.textContent = text;
-        msgDiv.className = `message-toast ${type}`;
+        msgDiv.textContent = texto;
+        msgDiv.className = `mensaje ${tipo}`;
         msgDiv.style.display = 'block';
         
         setTimeout(() => {
@@ -348,7 +286,7 @@
         }, 4000);
     }
 
-    // Setup file inputs
+    // Configurar file inputs
     function setupFileInputs() {
         const inputs = [
             { id: 'credencialFrente', nameId: 'credencialFrenteName' },
@@ -376,43 +314,10 @@
         });
     }
 
-    // Submit handler
-    document.getElementById('submitBtn')?.addEventListener('click', async function(e) {
-        e.preventDefault();
-        
-        if (isSubmitting) {
-            showMessage('⏳ Ya se está procesando tu registro...', 'info');
-            return;
-        }
-        
-        // Validar sección 3
-        const marca = document.getElementById('marcaVehiculo').value.trim();
-        const color = document.getElementById('colorVehiculo').value.trim();
-        const fotoVehiculo = document.getElementById('fotoVehiculo').files[0];
-        const fotoPlacas = document.getElementById('fotoPlacas').files[0];
-        
-        if (!marca || !color) {
-            showMessage('❌ Por favor completa la marca y color del vehículo', 'error');
-            return;
-        }
-        if (!fotoVehiculo) {
-            showMessage('❌ Por favor sube una foto de tu vehículo', 'error');
-            return;
-        }
-        if (!fotoPlacas) {
-            showMessage('❌ Por favor sube una foto de tus placas', 'error');
-            return;
-        }
-        
-        // Simular registro (aquí iría tu lógica de Supabase)
-        showMessage('✅ Registro exitoso! Tu código de acceso es: 123456', 'success');
-    });
-
     setupFileInputs();
-    updateStepper();
     
-    window.nextStep = nextStep;
-    window.prevStep = prevStep;
+    window.nextSection = nextSection;
+    window.prevSection = prevSection;
 </script>
 
 </body>
