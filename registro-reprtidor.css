@@ -1,490 +1,211 @@
-* { 
-    box-sizing: border-box; 
-}
+* { box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f1f3f6;
-    margin: 0;
-    padding: 20px;
-    min-height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f1f3f6;
 }
 
 .app {
-    max-width: 700px;
-    margin: auto;
+  max-width: 500px;
+  margin: auto;
+  padding: 15px;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-header h1 {
-    color: #27ae60;
-    font-size: 28px;
-    margin-bottom: 5px;
-}
+header { text-align: center; }
 
 header p {
-    color: #666;
-    margin: 5px 0;
-}
-
-.btn-volver {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 8px 20px;
-    background: #6c757d;
-    color: white;
-    text-decoration: none;
-    border-radius: 20px;
-    font-size: 13px;
-    transition: all 0.2s ease;
-}
-
-.btn-volver:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
+  color: #666;
+  margin: 5px 0;
 }
 
 .card {
-    background: white;
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-/* Progress Steps */
-.progress-steps {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 35px;
-    padding: 0 20px;
+input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  transition: all 0.2s ease;
 }
 
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
+/* Efecto al enfocar inputs */
+input:focus {
+  border-color: #27ae60;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
 }
 
-.step-number {
-    width: 40px;
-    height: 40px;
-    background: #e0e0e0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #666;
-    transition: all 0.3s ease;
+/* ========== BOTÓN PRINCIPAL ========== */
+button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #27ae60;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.step.active .step-number {
-    background: #27ae60;
-    color: white;
-    box-shadow: 0 0 0 3px rgba(39,174,96,0.2);
+/* Efecto hover para computadora */
+button:hover {
+  background: #219a52;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39,174,96,0.3);
 }
 
-.step.completed .step-number {
-    background: #27ae60;
-    color: white;
-    position: relative;
+/* Efecto active (cuando se presiona - para celular y computadora) */
+button:active {
+  transform: translateY(0px);
+  background: #1e8449;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.step.completed .step-number::after {
-    content: "✓";
-    position: absolute;
+/* Botón deshabilitado */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.step-label {
-    font-size: 12px;
-    color: #666;
+/* ========== FILE LABEL (SUBIR ARCHIVOS) ========== */
+.file-label {
+  display: block;
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 2px dashed #27ae60;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #27ae60;
 }
 
-.step.active .step-label {
-    color: #27ae60;
-    font-weight: 600;
+/* Efecto hover para computadora */
+.file-label:hover {
+  background: #e8f5e9;
+  border-color: #219a52;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39,174,96,0.2);
 }
 
-.step-line {
-    width: 60px;
-    height: 2px;
-    background: #e0e0e0;
+/* Efecto active (cuando se presiona) */
+.file-label:active {
+  transform: translateY(0px);
+  background: #d4edda;
 }
 
-/* Form Sections */
-.form-section {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.form-section.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.section-header h2 {
-    font-size: 22px;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.section-header p {
-    color: #888;
-    font-size: 13px;
-}
-
-/* Input Groups */
-.input-group {
-    margin-bottom: 20px;
-}
-
-.input-group label {
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 6px;
-}
-
-.required {
-    color: #dc3545;
-}
-
-.optional {
-    color: #999;
-    font-weight: normal;
-    font-size: 12px;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: #27ae60;
-    box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
-}
-
-.input-group small {
-    display: block;
-    font-size: 11px;
-    color: #999;
-    margin-top: 5px;
-}
-
-/* Two Columns */
-.two-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-/* Documents Container */
-.docs-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.doc-card {
-    background: #f8f9fa;
-    border-radius: 15px;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    transition: all 0.2s ease;
-    border: 1px solid #eee;
-}
-
-.doc-card:hover {
-    border-color: #27ae60;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.doc-card.optional {
-    background: #fef9e6;
-}
-
-.doc-icon {
-    font-size: 32px;
-    min-width: 50px;
-    text-align: center;
-}
-
-.doc-content {
-    flex: 1;
-}
-
-.doc-content strong {
-    display: block;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.doc-content span {
-    font-size: 11px;
-    color: #888;
-}
-
-/* File Buttons */
-.file-btn {
-    background: white;
-    border: 1px solid #27ae60;
-    border-radius: 25px;
-    padding: 8px 18px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #27ae60;
-    display: inline-block;
-}
-
-.file-btn:hover {
-    background: #27ae60;
-    color: white;
-    transform: scale(1.02);
-}
-
-.file-btn.primary {
-    background: #27ae60;
-    color: white;
-    border: none;
-}
-
-.file-btn.primary:hover {
-    background: #219a52;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(39,174,96,0.3);
-}
-
-.file-btn input {
-    display: none;
+/* Ocultar el input file original pero mantenerlo funcional */
+.file-label input[type="file"] {
+  display: none;
 }
 
 .file-name {
-    font-size: 11px;
-    color: #27ae60;
-    display: none;
-    width: 100%;
-    text-align: right;
+  display: block;
+  font-size: 11px;
+  color: #27ae60;
+  margin-top: 5px;
+  font-weight: normal;
+  word-break: break-all;
 }
 
-/* Button Group */
-.button-group {
-    display: flex;
-    gap: 15px;
-    margin-top: 30px;
-}
-
-.btn-next, .btn-back, .btn-submit {
-    flex: 1;
-    padding: 12px;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    text-align: center;
-}
-
-.btn-next {
-    background: #27ae60;
-    color: white;
-}
-
-.btn-next:hover {
-    background: #219a52;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(39,174,96,0.3);
-}
-
-.btn-back {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-back:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-}
-
-.btn-submit {
-    background: #27ae60;
-    color: white;
-    width: 100%;
-}
-
-.btn-submit:hover {
-    background: #219a52;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(39,174,96,0.3);
-}
-
-.btn-next:active, .btn-back:active, .btn-submit:active {
-    transform: translateY(0);
-}
-
-/* Message */
-.mensaje {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-    font-weight: 500;
-    display: none;
-}
-
-.mensaje.success {
-    display: block;
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.mensaje.error {
-    display: block;
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.mensaje.info {
-    display: block;
-    background: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-}
-
-/* Código de éxito */
-.codigo-container {
-    text-align: center;
-    margin: 20px 0;
-    padding: 25px;
-    background: #e8f5e9;
-    border-radius: 15px;
-}
-
-.codigo {
-    font-size: 36px;
-    font-weight: bold;
-    color: #27ae60;
-    letter-spacing: 3px;
-    font-family: monospace;
-    margin: 15px 0;
-    background: white;
-    padding: 10px 20px;
-    border-radius: 10px;
-    display: inline-block;
-}
-
-/* WhatsApp Button */
+/* ========== BOTÓN WHATSAPP FLOTANTE ========== */
 .wpp-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #25D366;
-    color: white;
-    width: 55px;
-    height: 55px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    text-decoration: none;
-    font-size: 28px;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 1000;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  padding: 15px;
+  border-radius: 50%;
+  text-decoration: none;
+  font-size: 24px;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 1000;
 }
 
+/* Efecto hover para computadora */
 .wpp-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(37,211,102,0.4);
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(37,211,102,0.4);
 }
 
-/* Responsive */
+/* Efecto active (cuando se presiona) */
+.wpp-btn:active {
+  transform: scale(0.95);
+}
+
+/* ========== INPUTS CON EFECTOS TÁCTILES ========== */
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Efecto al tocar en móvil */
+input:active {
+  background-color: #f8f9fa;
+  transform: scale(0.99);
+}
+
+/* ========== MENSAJE ========== */
+#mensaje {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+#mensaje.success {
+  color: #28a745;
+}
+
+#mensaje.error {
+  color: #dc3545;
+}
+
+/* ========== RESPONSIVE PARA MÓVIL ========== */
 @media (max-width: 600px) {
-    body {
-        padding: 10px;
-    }
-    
-    .card {
-        padding: 20px;
-    }
-    
-    .progress-steps {
-        padding: 0 10px;
-    }
-    
-    .step-number {
-        width: 35px;
-        height: 35px;
-        font-size: 14px;
-    }
-    
-    .step-label {
-        font-size: 10px;
-    }
-    
-    .step-line {
-        width: 30px;
-    }
-    
-    .two-columns {
-        grid-template-columns: 1fr;
-    }
-    
-    .doc-card {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .button-group {
-        flex-direction: column;
-    }
-    
-    .file-btn {
-        width: 100%;
-        text-align: center;
-    }
-    
-    .codigo {
-        font-size: 24px;
-        letter-spacing: 2px;
-    }
+  .app {
+    padding: 10px;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+  
+  button {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  .file-label {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .wpp-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+    bottom: 15px;
+    right: 15px;
+  }
 }

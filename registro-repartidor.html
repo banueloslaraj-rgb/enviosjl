@@ -12,313 +12,62 @@
     <header>
         <h1>🛵 Mandaditos Express</h1>
         <p>Registro de repartidores</p>
-        <a href="index.html" class="btn-volver">← Volver al inicio</a>
     </header>
 
     <form id="registroForm" class="card">
-        <!-- Barra de progreso -->
-        <div class="progress-steps">
-            <div class="step active" data-step="1">
-                <div class="step-number">1</div>
-                <div class="step-label">Datos personales</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step" data-step="2">
-                <div class="step-number">2</div>
-                <div class="step-label">Documentos</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step" data-step="3">
-                <div class="step-number">3</div>
-                <div class="step-label">Vehículo</div>
-            </div>
-        </div>
-
-        <!-- Sección 1: Datos personales -->
-        <div class="form-section active" id="section1">
-            <div class="section-header">
-                <h2>📋 Datos personales</h2>
-                <p>Información básica para contactarte</p>
-            </div>
-            
-            <div class="input-group">
-                <label>Nombre completo <span class="required">*</span></label>
-                <input type="text" id="nombreCompleto" placeholder="Ej: Juan Pérez González" required>
-                <small>Ingresa tu nombre tal como aparece en tu identificación</small>
-            </div>
-
-            <div class="input-group">
-                <label>Teléfono <span class="required">*</span></label>
-                <input type="tel" id="telefono" placeholder="10 dígitos, ej: 3111234567" required pattern="[0-9]{10}">
-                <small>Número de WhatsApp para recibir notificaciones</small>
-            </div>
-
-            <div class="input-group">
-                <label>Correo electrónico <span class="optional">(Opcional)</span></label>
-                <input type="email" id="email" placeholder="tucorreo@ejemplo.com">
-                <small>Para enviarte información importante</small>
-            </div>
-
-            <button type="button" class="btn-next" onclick="nextSection(2)">Continuar →</button>
-        </div>
-
-        <!-- Sección 2: Documentos -->
-        <div class="form-section" id="section2">
-            <div class="section-header">
-                <h2>📄 Documentos requeridos</h2>
-                <p>Sube los documentos oficiales para tu registro</p>
-            </div>
-            
-            <div class="docs-container">
-                <div class="doc-card">
-                    <div class="doc-icon">🪪</div>
-                    <div class="doc-content">
-                        <strong>Credencial de elector (Frente)</strong>
-                        <span>INE, IFE o identificación oficial</span>
-                    </div>
-                    <label class="file-btn">
-                        📸 Seleccionar archivo
-                        <input type="file" id="credencialFrente" accept="image/*" required>
-                    </label>
-                    <span class="file-name" id="credencialFrenteName"></span>
-                </div>
-
-                <div class="doc-card">
-                    <div class="doc-icon">🪪</div>
-                    <div class="doc-content">
-                        <strong>Credencial de elector (Reverso)</strong>
-                        <span>Parte trasera de tu identificación</span>
-                    </div>
-                    <label class="file-btn">
-                        📸 Seleccionar archivo
-                        <input type="file" id="credencialReverso" accept="image/*" required>
-                    </label>
-                    <span class="file-name" id="credencialReversoName"></span>
-                </div>
-
-                <div class="doc-card">
-                    <div class="doc-icon">🏠</div>
-                    <div class="doc-content">
-                        <strong>Comprobante de domicilio</strong>
-                        <span>Agua, luz, teléfono o predial (últimos 3 meses)</span>
-                    </div>
-                    <label class="file-btn">
-                        📄 Seleccionar archivo
-                        <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
-                    </label>
-                    <span class="file-name" id="comprobanteDomicilioName"></span>
-                </div>
-
-                <div class="doc-card optional">
-                    <div class="doc-icon">🚗</div>
-                    <div class="doc-content">
-                        <strong>Licencia de conducir</strong>
-                        <span>Opcional - Recomendado</span>
-                    </div>
-                    <label class="file-btn">
-                        🚗 Seleccionar archivo
-                        <input type="file" id="licencia" accept="image/*">
-                    </label>
-                    <span class="file-name" id="licenciaName"></span>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button type="button" class="btn-back" onclick="prevSection(1)">← Anterior</button>
-                <button type="button" class="btn-next" onclick="nextSection(3)">Continuar →</button>
-            </div>
-        </div>
-
-        <!-- Sección 3: Datos del vehículo -->
-        <div class="form-section" id="section3">
-            <div class="section-header">
-                <h2>🚘 Datos del vehículo</h2>
-                <p>Cuéntanos sobre tu medio de transporte</p>
-            </div>
-            
-            <div class="two-columns">
-                <div class="input-group">
-                    <label>Marca y modelo <span class="required">*</span></label>
-                    <input type="text" id="marcaVehiculo" placeholder="Ej: Honda Cargo 150" required>
-                </div>
-
-                <div class="input-group">
-                    <label>Color <span class="required">*</span></label>
-                    <input type="text" id="colorVehiculo" placeholder="Ej: Rojo, Azul, Negro" required>
-                </div>
-            </div>
-
-            <div class="doc-card">
-                <div class="doc-icon">📸</div>
-                <div class="doc-content">
-                    <strong>Foto del vehículo</strong>
-                    <span>Muestra tu vehículo completo, debe verse la placa</span>
-                </div>
-                <label class="file-btn primary">
-                    📷 Tomar foto / Subir
-                    <input type="file" id="fotoVehiculo" accept="image/*" required>
-                </label>
-                <span class="file-name" id="fotoVehiculoName"></span>
-            </div>
-
-            <div class="doc-card">
-                <div class="doc-icon">🔢</div>
-                <div class="doc-content">
-                    <strong>Foto de placas</strong>
-                    <span>Placas del vehículo claramente visibles</span>
-                </div>
-                <label class="file-btn primary">
-                    🔢 Subir foto de placas
-                    <input type="file" id="fotoPlacas" accept="image/*" required>
-                </label>
-                <span class="file-name" id="fotoPlacasName"></span>
-            </div>
-
-            <div class="button-group">
-                <button type="button" class="btn-back" onclick="prevSection(2)">← Anterior</button>
-                <button type="submit" class="btn-submit">✅ Registrar como repartidor</button>
-            </div>
-        </div>
+        <input type="text" id="nombreCompleto" placeholder="👤 Nombre completo" required>
+        <input type="tel" id="telefono" placeholder="📞 Teléfono (10 dígitos)" required pattern="[0-9]{10}">
+        <input type="email" id="email" placeholder="✉️ Correo electrónico (opcional)">
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Frente)
+            <input type="file" id="credencialFrente" accept="image/*" required>
+            <span class="file-name" id="credencialFrenteName"></span>
+        </label>
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Reverso)
+            <input type="file" id="credencialReverso" accept="image/*" required>
+            <span class="file-name" id="credencialReversoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🏠 Comprobante de domicilio
+            <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
+            <span class="file-name" id="comprobanteDomicilioName"></span>
+        </label>
+        
+        <label class="file-label">
+            🚗 Licencia de conducir (Opcional)
+            <input type="file" id="licencia" accept="image/*">
+            <span class="file-name" id="licenciaName"></span>
+        </label>
+        
+        <input type="text" id="marcaVehiculo" placeholder="🚘 Marca y modelo" required>
+        <input type="text" id="colorVehiculo" placeholder="🎨 Color del vehículo" required>
+        
+        <label class="file-label">
+            📸 Foto del vehículo
+            <input type="file" id="fotoVehiculo" accept="image/*" required>
+            <span class="file-name" id="fotoVehiculoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🔢 Foto de placas
+            <input type="file" id="fotoPlacas" accept="image/*" required>
+            <span class="file-name" id="fotoPlacasName"></span>
+        </label>
+        
+        <button type="submit">📝 Registrar como repartidor</button>
     </form>
     
-    <div id="mensaje" class="mensaje"></div>
+    <p id="mensaje"></p>
 </div>
 
 <a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="registro-repartidor.js"></script>
-
-<script>
-    let currentSection = 1;
-
-    function nextSection(section) {
-        if (section === 2 && !validateSection1()) return;
-        if (section === 3 && !validateSection2()) return;
-        
-        document.getElementById(`section${currentSection}`).classList.remove('active');
-        document.getElementById(`section${section}`).classList.add('active');
-        
-        // Actualizar steps
-        document.querySelectorAll('.step').forEach((step, index) => {
-            if (index + 1 === section) {
-                step.classList.add('active');
-            } else if (index + 1 < section) {
-                step.classList.add('completed');
-                step.classList.remove('active');
-            } else {
-                step.classList.remove('active', 'completed');
-            }
-        });
-        
-        currentSection = section;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function prevSection(section) {
-        document.getElementById(`section${currentSection}`).classList.remove('active');
-        document.getElementById(`section${section}`).classList.add('active');
-        
-        document.querySelectorAll('.step').forEach((step, index) => {
-            if (index + 1 === section) {
-                step.classList.add('active');
-            } else {
-                step.classList.remove('active');
-            }
-            if (index + 1 < section) {
-                step.classList.add('completed');
-            } else {
-                step.classList.remove('completed');
-            }
-        });
-        
-        currentSection = section;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function validateSection1() {
-        const nombre = document.getElementById('nombreCompleto').value.trim();
-        const telefono = document.getElementById('telefono').value.trim();
-        
-        if (!nombre) {
-            mostrarMensaje('❌ Por favor ingresa tu nombre completo', 'error');
-            return false;
-        }
-        if (!telefono) {
-            mostrarMensaje('❌ Por favor ingresa tu número de teléfono', 'error');
-            return false;
-        }
-        if (!/^\d{10}$/.test(telefono)) {
-            mostrarMensaje('❌ El teléfono debe tener 10 dígitos', 'error');
-            return false;
-        }
-        return true;
-    }
-
-    function validateSection2() {
-        const credFrente = document.getElementById('credencialFrente').files[0];
-        const credReverso = document.getElementById('credencialReverso').files[0];
-        const comprobante = document.getElementById('comprobanteDomicilio').files[0];
-        
-        if (!credFrente) {
-            mostrarMensaje('❌ Por favor sube el frente de tu credencial', 'error');
-            return false;
-        }
-        if (!credReverso) {
-            mostrarMensaje('❌ Por favor sube el reverso de tu credencial', 'error');
-            return false;
-        }
-        if (!comprobante) {
-            mostrarMensaje('❌ Por favor sube tu comprobante de domicilio', 'error');
-            return false;
-        }
-        return true;
-    }
-
-    function mostrarMensaje(texto, tipo) {
-        const msgDiv = document.getElementById('mensaje');
-        msgDiv.textContent = texto;
-        msgDiv.className = `mensaje ${tipo}`;
-        msgDiv.style.display = 'block';
-        
-        setTimeout(() => {
-            msgDiv.style.display = 'none';
-        }, 4000);
-    }
-
-    // Configurar file inputs
-    function setupFileInputs() {
-        const inputs = [
-            { id: 'credencialFrente', nameId: 'credencialFrenteName' },
-            { id: 'credencialReverso', nameId: 'credencialReversoName' },
-            { id: 'comprobanteDomicilio', nameId: 'comprobanteDomicilioName' },
-            { id: 'licencia', nameId: 'licenciaName' },
-            { id: 'fotoVehiculo', nameId: 'fotoVehiculoName' },
-            { id: 'fotoPlacas', nameId: 'fotoPlacasName' }
-        ];
-        
-        inputs.forEach(({ id, nameId }) => {
-            const input = document.getElementById(id);
-            const nameSpan = document.getElementById(nameId);
-            if (input && nameSpan) {
-                input.addEventListener('change', function() {
-                    if (this.files && this.files[0]) {
-                        nameSpan.textContent = this.files[0].name;
-                        nameSpan.style.display = 'block';
-                    } else {
-                        nameSpan.textContent = '';
-                        nameSpan.style.display = 'none';
-                    }
-                });
-            }
-        });
-    }
-
-    setupFileInputs();
-    
-    window.nextSection = nextSection;
-    window.prevSection = prevSection;
-</script>
 
 </body>
 </html>

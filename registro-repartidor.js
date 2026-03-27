@@ -52,9 +52,10 @@ function setupFileInputs() {
             input.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
                     nameSpan.textContent = this.files[0].name;
-                    nameSpan.style.color = '#27ae60';
+                    nameSpan.style.display = 'block';
                 } else {
                     nameSpan.textContent = '';
+                    nameSpan.style.display = 'none';
                 }
             });
         }
@@ -63,13 +64,13 @@ function setupFileInputs() {
 
 // Mostrar mensaje
 function mostrarMensaje(texto, tipo) {
-    const mensajeDiv = document.getElementById('mensaje');
-    mensajeDiv.textContent = texto;
-    mensajeDiv.className = `mensaje ${tipo}`;
-    mensajeDiv.style.display = 'block';
+    const mensaje = document.getElementById('mensaje');
+    mensaje.textContent = texto;
+    mensaje.className = tipo;
     
     setTimeout(() => {
-        mensajeDiv.style.display = 'none';
+        mensaje.textContent = '';
+        mensaje.className = '';
     }, 5000);
 }
 
@@ -148,7 +149,6 @@ form.addEventListener('submit', async (e) => {
         let codigo = generarCodigo();
         let codigoUnico = false;
         
-        // Verificar que el código no exista
         while (!codigoUnico) {
             const { data: existente } = await supabase
                 .from("repartidores")
@@ -169,7 +169,7 @@ form.addEventListener('submit', async (e) => {
             telefono: telefono,
             email: document.getElementById('email').value || null,
             codigo: codigo,
-            estado: "pendiente", // pendiente, activo, rechazado
+            estado: "pendiente",
             credencial_frente: urlCredencialFrente,
             credencial_reverso: urlCredencialReverso,
             comprobante_domicilio: urlComprobante,
@@ -189,31 +189,24 @@ form.addEventListener('submit', async (e) => {
             throw new Error(insertError.message);
         }
         
-        // Mostrar código al usuario
+        // Mostrar mensaje de éxito con código
         const mensajeDiv = document.getElementById('mensaje');
         mensajeDiv.innerHTML = `
-            <div class="codigo-container">
-                <strong>✅ ¡Registro exitoso!</strong><br><br>
-                <div>Tu código de acceso es:</div>
-                <div class="codigo">${codigo}</div>
-                <div style="font-size: 12px; margin-top: 10px;">
-                    ⚠️ Guarda este código, lo necesitarás para iniciar sesión.<br>
-                    Tu registro será revisado por el administrador.
-                </div>
-            </div>
+            ✅ ¡Registro exitoso!<br>
+            <strong>Tu código de acceso es: ${codigo}</strong><br>
+            ⚠️ Guarda este código, lo necesitarás para iniciar sesión.<br>
+            Tu registro será revisado por el administrador.
         `;
-        mensajeDiv.className = 'mensaje success';
-        mensajeDiv.style.display = 'block';
+        mensajeDiv.className = 'success';
         
         // Enviar WhatsApp al admin
         await enviarWhatsAppAdmin(datosRepartidor, codigo);
         
         // Limpiar formulario
         form.reset();
-        
-        // Resetear nombres de archivos
         document.querySelectorAll('.file-name').forEach(span => {
             span.textContent = '';
+            span.style.display = 'none';
         });
         
         // Redirigir después de 5 segundos
