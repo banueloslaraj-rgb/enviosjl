@@ -10,9 +10,8 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Elementos del DOM
-const contenedorPedidos = document.getElementById("pedidos");
-const contenedorRepartidores = document.getElementById("repartidores");
-const tabs = document.querySelectorAll(".tab-btn");
+let contenedorPedidos = document.getElementById("pedidos");
+let contenedorRepartidores = document.getElementById("repartidores");
 
 // Variable para controlar pestaña activa
 let pestañaActiva = "pedidos";
@@ -22,17 +21,6 @@ function logout() {
     if (confirm("¿Seguro que quieres cerrar sesión?")) {
         localStorage.removeItem("admin");
         window.location = "admin-login.html";
-    }
-}
-
-// Función para obtener color según estado
-function getEstadoColor(estado) {
-    switch(estado) {
-        case "pendiente": return "#28a745";
-        case "asignado": return "#007bff";
-        case "en camino": return "#17a2b8";
-        case "entregado": return "#6c757d";
-        default: return "black";
     }
 }
 
@@ -58,111 +46,134 @@ function getEstadoBadge(estado) {
     return badges[estado] || `<span class="estado-badge">${estado}</span>`;
 }
 
+// 🔒 Escapar HTML para prevenir XSS
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 // 📦 Cargar pedidos ordenados por fecha (más recientes primero)
 async function cargarPedidos() {
-    if (!contenedorPedidos) return;
+    if (!contenedorPedidos) {
+        console.error("Contenedor de pedidos no encontrado");
+        return;
+    }
     
     contenedorPedidos.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
-
-    const { data, error } = await supabaseClient
-        .from("pedidos")
-        .select("*")
-        .order("fecha", { ascending: false });
-
-    // LOGS PARA DIAGNÓSTICO
-    console.log("=== DIAGNÓSTICO DE PEDIDOS ===");
-    console.log("Cantidad de pedidos encontrados:", data?.length || 0);
-    console.log("Primer pedido:", data?.[0]);
-    console.log("Error:", error);
     
-    // Verificar si hay RLS bloqueando
-    if (error) {
-        console.error("❌ Error al cargar pedidos:", error);
-        if (error.message?.includes("row level security") || error.code === "42501") {
-            contenedorPedidos.innerHTML = '<div class="error-message">⚠️ Error de permisos (RLS). Contacta al administrador para configurar las políticas de seguridad.</div>';
-        } else {
-            contenedorPedidos.innerHTML = '<div class="error-message">❌ Error cargando pedidos: ' + error.message + '</div>';
-        }
-        return;
-    }
-
-    if (!data || data.length === 0) {
-        contenedorPedidos.innerHTML = '<div class="empty-message">📭 No hay pedidos aún</div>';
-        return;
-    }
-
-    contenedorPedidos.innerHTML = "";
-
-    data.forEach(p => {
-        const card = document.createElement("div");
-        card.className = `card ${getEstadoClass(p.estado)}`;
+    console.log("=== CARGANDO PEDIDOS ===");
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from("pedidos")
+            .select("*")
+            .order("fecha", { ascending: false });
         
-        // Formatear fecha
-        let fechaFormateada = "Sin fecha";
-        if (p.fecha) {
-            const fechaObj = new Date(p.fecha);
-            fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+        console.log("Datos recibidos:", data);
+        console.log("Error:", error);
+        
+        if (error) {
+            console.error("Error en consulta:", error);
+            contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+            return;
         }
-
-        // Formatear imágenes
-        let imagenesHtml = '';
-        if (p.fotos && p.fotos.length > 0) {
-            imagenesHtml = `
-                <div class="imagenes">
-                    <strong>📸 Fotos:</strong><br>
-                    <div class="imagenes-container">
-                        ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy">`).join("")}
-                    </div>
-                </div>
-            `;
+        
+        if (!data || data.length === 0) {
+            contenedorPedidos.innerHTML = '<div class="empty-message">📭 No hay pedidos aún</div>';
+            return;
         }
-
-        card.innerHTML = `
-            <div class="pedido-id">
-                🆔 Pedido #${p.id}
-                <span class="pedido-fecha">📅 ${fechaFormateada}</span>
-            </div>
+        
+        console.log(`✅ Mostrando ${data.length} pedidos`);
+        contenedorPedidos.innerHTML = "";
+        
+        data.forEach((p, index) => {
+            console.log(`Renderizando pedido ${index + 1}:`, p.id);
             
-            <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion)}</p>
-            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.recoleccion).replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-
-            <p><strong>📍 Entrega:</strong> ${escapeHtml(p.entrega)}</p>
-            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.entrega).replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-
-            <p><strong>👤 Envía:</strong> ${escapeHtml(p.remitente)}</p>
-            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_remitente) || "No disponible"}</p>
-            <a href="tel:${escapeHtml(p.tel_remitente)}" class="btn-call">📞 Llamar remitente</a>
-
-            <p><strong>👤 Recibe:</strong> ${escapeHtml(p.destinatario)}</p>
-            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_destinatario) || "No disponible"}</p>
-            <a href="tel:${escapeHtml(p.tel_destinatario)}" class="btn-call">📞 Llamar destinatario</a>
-
-            <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion)}</p>
-            <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
-            <p><strong>🚚 Costo envío:</strong> <strong>${p.envio}</strong></p>
-            <p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre ? `${escapeHtml(p.repartidor_nombre)} (${escapeHtml(p.repartidor_telefono)})` : "❌ Sin asignar"}</p>
-            <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado)}</p>
-
-            <select id="estado-${p.id}" style="margin-top: 10px;">
-                <option value="pendiente" ${p.estado === "pendiente" ? "selected" : ""}>📦 Pendiente</option>
-                <option value="asignado" ${p.estado === "asignado" ? "selected" : ""}>🛵 Asignado</option>
-                <option value="en camino" ${p.estado === "en camino" ? "selected" : ""}>🚚 En camino</option>
-                <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
-            </select>
-
-            <button onclick="actualizarEstadoPedido(${p.id})" style="margin-top: 5px;">🔄 Actualizar estado</button>
-
-            ${imagenesHtml}
-        `;
-
-        contenedorPedidos.appendChild(card);
-    });
+            const card = document.createElement("div");
+            card.className = `card ${getEstadoClass(p.estado)}`;
+            
+            // Formatear fecha
+            let fechaFormateada = "Sin fecha";
+            if (p.fecha) {
+                try {
+                    const fechaObj = new Date(p.fecha);
+                    if (!isNaN(fechaObj.getTime())) {
+                        fechaFormateada = fechaObj.toLocaleString('es-MX', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error formateando fecha:", e);
+                }
+            }
+            
+            // Formatear imágenes
+            let imagenesHtml = '';
+            if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
+                imagenesHtml = `
+                    <div class="imagenes">
+                        <strong>📸 Fotos:</strong><br>
+                        <div class="imagenes-container">
+                            ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy" style="width:80px; margin:5px; border-radius:8px; cursor:pointer;">`).join("")}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            card.innerHTML = `
+                <div class="pedido-id">
+                    🆔 Pedido #${p.id}
+                    <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+                </div>
+                
+                <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion) || "No especificado"}</p>
+                <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.recoleccion || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+                
+                <p><strong>📍 Entrega:</strong> ${escapeHtml(p.entrega) || "No especificado"}</p>
+                <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.entrega || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+                
+                <p><strong>👤 Envía:</strong> ${escapeHtml(p.remitente) || "No especificado"}</p>
+                <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_remitente) || "No disponible"}</p>
+                ${p.tel_remitente ? `<a href="tel:${escapeHtml(p.tel_remitente)}" class="btn-call">📞 Llamar remitente</a>` : ''}
+                
+                <p><strong>👤 Recibe:</strong> ${escapeHtml(p.destinatario) || "No especificado"}</p>
+                <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_destinatario) || "No disponible"}</p>
+                ${p.tel_destinatario ? `<a href="tel:${escapeHtml(p.tel_destinatario)}" class="btn-call">📞 Llamar destinatario</a>` : ''}
+                
+                <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion) || "No especificado"}</p>
+                <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio || "0"}</strong></p>
+                <p><strong>🚚 Costo envío:</strong> <strong>${p.envio || "No calculado"}</strong></p>
+                <p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre ? `${escapeHtml(p.repartidor_nombre)} (${escapeHtml(p.repartidor_telefono)})` : "❌ Sin asignar"}</p>
+                <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado || "pendiente")}</p>
+                
+                <select id="estado-${p.id}" style="margin-top: 10px; width:100%; padding:10px; border-radius:8px;">
+                    <option value="pendiente" ${p.estado === "pendiente" ? "selected" : ""}>📦 Pendiente</option>
+                    <option value="asignado" ${p.estado === "asignado" ? "selected" : ""}>🛵 Asignado</option>
+                    <option value="en camino" ${p.estado === "en camino" ? "selected" : ""}>🚚 En camino</option>
+                    <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
+                </select>
+                
+                <button onclick="actualizarEstadoPedido(${p.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                
+                ${imagenesHtml}
+            `;
+            
+            contenedorPedidos.appendChild(card);
+        });
+        
+    } catch (error) {
+        console.error("Error fatal en cargarPedidos:", error);
+        contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+    }
 }
 
 // 🛵 Cargar repartidores
@@ -170,96 +181,99 @@ async function cargarRepartidores() {
     if (!contenedorRepartidores) return;
     
     contenedorRepartidores.innerHTML = '<div class="loader">🔄 Cargando repartidores...</div>';
-
-    const { data, error } = await supabaseClient
-        .from("repartidores")
-        .select("*")
-        .order("fecha_registro", { ascending: false });
-
-    console.log("Repartidores cargados:", data);
-    console.log("Error:", error);
-
-    if (error) {
-        if (error.message?.includes("row level security") || error.code === "42501") {
-            contenedorRepartidores.innerHTML = '<div class="error-message">⚠️ Error de permisos (RLS). Contacta al administrador.</div>';
-        } else {
-            contenedorRepartidores.innerHTML = '<div class="error-message">❌ Error cargando repartidores</div>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from("repartidores")
+            .select("*")
+            .order("fecha_registro", { ascending: false });
+        
+        console.log("Repartidores cargados:", data);
+        
+        if (error) {
+            contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+            return;
         }
-        return;
+        
+        if (!data || data.length === 0) {
+            contenedorRepartidores.innerHTML = '<div class="empty-message">📭 No hay repartidores registrados</div>';
+            return;
+        }
+        
+        contenedorRepartidores.innerHTML = "";
+        
+        data.forEach(r => {
+            const card = document.createElement("div");
+            card.className = "card repartidor-card";
+            
+            let fechaFormateada = "Sin fecha";
+            if (r.fecha_registro) {
+                try {
+                    const fechaObj = new Date(r.fecha_registro);
+                    if (!isNaN(fechaObj.getTime())) {
+                        fechaFormateada = fechaObj.toLocaleString('es-MX', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                } catch (e) {}
+            }
+            
+            let estadoColor = "";
+            let estadoTexto = "";
+            switch(r.estado) {
+                case "activo":
+                    estadoColor = "#28a745";
+                    estadoTexto = "✅ ACTIVO";
+                    break;
+                case "pendiente":
+                    estadoColor = "#ffc107";
+                    estadoTexto = "⏳ PENDIENTE";
+                    break;
+                case "rechazado":
+                    estadoColor = "#dc3545";
+                    estadoTexto = "❌ RECHAZADO";
+                    break;
+                default:
+                    estadoColor = "#6c757d";
+                    estadoTexto = r.estado?.toUpperCase() || "DESCONOCIDO";
+            }
+            
+            card.innerHTML = `
+                <div class="repartidor-header">
+                    <strong>🛵 ${escapeHtml(r.nombre_completo)}</strong>
+                    <span class="repartidor-fecha">📅 ${fechaFormateada}</span>
+                </div>
+                
+                <p><strong>📞 Teléfono:</strong> ${escapeHtml(r.telefono)}</p>
+                <p><strong>✉️ Email:</strong> ${r.email ? escapeHtml(r.email) : "No especificado"}</p>
+                <p><strong>🔑 Código:</strong> <span class="codigo-repartidor">${r.codigo}</span></p>
+                <p><strong>🚗 Vehículo:</strong> ${escapeHtml(r.marca_vehiculo)} - ${escapeHtml(r.color_vehiculo)}</p>
+                <p><strong>📊 Estado:</strong> <span style="color:${estadoColor}; font-weight:bold;">${estadoTexto}</span></p>
+                
+                <div class="documentos-buttons">
+                    <button class="btn-documentos" onclick="verDocumentosRepartidor('${r.id}', '${r.nombre_completo}')">📄 Ver documentos</button>
+                </div>
+                
+                <select id="estado-rep-${r.id}" style="margin-top: 10px; width:100%; padding:10px; border-radius:8px;">
+                    <option value="pendiente" ${r.estado === "pendiente" ? "selected" : ""}>⏳ Pendiente</option>
+                    <option value="activo" ${r.estado === "activo" ? "selected" : ""}>✅ Activo</option>
+                    <option value="rechazado" ${r.estado === "rechazado" ? "selected" : ""}>❌ Rechazado</option>
+                </select>
+                
+                <button onclick="actualizarEstadoRepartidor(${r.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+            `;
+            
+            contenedorRepartidores.appendChild(card);
+        });
+        
+    } catch (error) {
+        console.error("Error cargando repartidores:", error);
+        contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
     }
-
-    if (!data || data.length === 0) {
-        contenedorRepartidores.innerHTML = '<div class="empty-message">📭 No hay repartidores registrados</div>';
-        return;
-    }
-
-    contenedorRepartidores.innerHTML = "";
-
-    data.forEach(r => {
-        const card = document.createElement("div");
-        card.className = "card repartidor-card";
-        
-        // Formatear fecha
-        let fechaFormateada = "Sin fecha";
-        if (r.fecha_registro) {
-            const fechaObj = new Date(r.fecha_registro);
-            fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-        
-        // Determinar color de estado
-        let estadoColor = "";
-        let estadoTexto = "";
-        switch(r.estado) {
-            case "activo":
-                estadoColor = "#28a745";
-                estadoTexto = "✅ ACTIVO";
-                break;
-            case "pendiente":
-                estadoColor = "#ffc107";
-                estadoTexto = "⏳ PENDIENTE";
-                break;
-            case "rechazado":
-                estadoColor = "#dc3545";
-                estadoTexto = "❌ RECHAZADO";
-                break;
-            default:
-                estadoColor = "#6c757d";
-                estadoTexto = r.estado.toUpperCase();
-        }
-        
-        card.innerHTML = `
-            <div class="repartidor-header">
-                <strong>🛵 ${escapeHtml(r.nombre_completo)}</strong>
-                <span class="repartidor-fecha">📅 ${fechaFormateada}</span>
-            </div>
-            
-            <p><strong>📞 Teléfono:</strong> ${escapeHtml(r.telefono)}</p>
-            <p><strong>✉️ Email:</strong> ${r.email ? escapeHtml(r.email) : "No especificado"}</p>
-            <p><strong>🔑 Código:</strong> <span class="codigo-repartidor">${r.codigo}</span></p>
-            <p><strong>🚗 Vehículo:</strong> ${escapeHtml(r.marca_vehiculo)} - ${escapeHtml(r.color_vehiculo)}</p>
-            <p><strong>📊 Estado:</strong> <span style="color:${estadoColor}; font-weight:bold;">${estadoTexto}</span></p>
-            
-            <div class="documentos-buttons">
-                <button class="btn-documentos" onclick="verDocumentosRepartidor('${r.id}', '${r.nombre_completo}')">📄 Ver documentos</button>
-            </div>
-            
-            <select id="estado-rep-${r.id}" style="margin-top: 10px;">
-                <option value="pendiente" ${r.estado === "pendiente" ? "selected" : ""}>⏳ Pendiente</option>
-                <option value="activo" ${r.estado === "activo" ? "selected" : ""}>✅ Activo</option>
-                <option value="rechazado" ${r.estado === "rechazado" ? "selected" : ""}>❌ Rechazado</option>
-            </select>
-            
-            <button onclick="actualizarEstadoRepartidor(${r.id})" style="margin-top: 5px;">🔄 Actualizar estado</button>
-        `;
-        
-        contenedorRepartidores.appendChild(card);
-    });
 }
 
 // 📄 Ver documentos del repartidor
@@ -275,7 +289,6 @@ async function verDocumentosRepartidor(id, nombre) {
         return;
     }
     
-    // Crear modal
     const modal = document.createElement("div");
     modal.className = "modal";
     modal.innerHTML = `
@@ -287,8 +300,8 @@ async function verDocumentosRepartidor(id, nombre) {
             <div class="modal-body">
                 <h4>🪪 Credencial de elector</h4>
                 <div class="documentos-grid">
-                    ${repartidor.credencial_frente ? `<div><strong>Frente:</strong><br><img src="${repartidor.credencial_frente}" onclick="window.open('${repartidor.credencial_frente}','_blank')" loading="lazy"></div>` : "<p>No disponible</p>"}
-                    ${repartidor.credencial_reverso ? `<div><strong>Reverso:</strong><br><img src="${repartidor.credencial_reverso}" onclick="window.open('${repartidor.credencial_reverso}','_blank')" loading="lazy"></div>` : "<p>No disponible</p>"}
+                    ${repartidor.credencial_frente ? `<div><strong>Frente:</strong><br><img src="${repartidor.credencial_frente}" onclick="window.open('${repartidor.credencial_frente}','_blank')" style="max-width:100%; border-radius:8px; cursor:pointer;"></div>` : "<p>No disponible</p>"}
+                    ${repartidor.credencial_reverso ? `<div><strong>Reverso:</strong><br><img src="${repartidor.credencial_reverso}" onclick="window.open('${repartidor.credencial_reverso}','_blank')" style="max-width:100%; border-radius:8px; cursor:pointer;"></div>` : "<p>No disponible</p>"}
                 </div>
                 
                 <h4>🏠 Comprobante de domicilio</h4>
@@ -298,21 +311,17 @@ async function verDocumentosRepartidor(id, nombre) {
                 ${repartidor.licencia ? `<a href="${repartidor.licencia}" target="_blank" class="btn-documento-link">🚗 Ver licencia</a>` : "<p>No disponible (opcional)</p>"}
                 
                 <h4>📸 Foto del vehículo</h4>
-                ${repartidor.foto_vehiculo ? `<img src="${repartidor.foto_vehiculo}" onclick="window.open('${repartidor.foto_vehiculo}','_blank')" class="documento-img" loading="lazy">` : "<p>No disponible</p>"}
+                ${repartidor.foto_vehiculo ? `<img src="${repartidor.foto_vehiculo}" onclick="window.open('${repartidor.foto_vehiculo}','_blank')" style="max-width:100%; border-radius:8px; cursor:pointer;">` : "<p>No disponible</p>"}
                 
                 <h4>🔢 Foto de placas</h4>
-                ${repartidor.foto_placas ? `<img src="${repartidor.foto_placas}" onclick="window.open('${repartidor.foto_placas}','_blank')" class="documento-img" loading="lazy">` : "<p>No disponible</p>"}
+                ${repartidor.foto_placas ? `<img src="${repartidor.foto_placas}" onclick="window.open('${repartidor.foto_placas}','_blank')" style="max-width:100%; border-radius:8px; cursor:pointer;">` : "<p>No disponible</p>"}
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
-    
-    // Cerrar modal al hacer clic fuera
     modal.addEventListener("click", (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
+        if (e.target === modal) modal.remove();
     });
 }
 
@@ -326,22 +335,18 @@ async function actualizarEstadoPedido(id) {
     const textoOriginal = btn.textContent;
     btn.textContent = "⏳ Actualizando...";
     btn.disabled = true;
-
+    
     try {
         const { error } = await supabaseClient
             .from("pedidos")
             .update({ estado })
             .eq("id", id);
-
-        if (error) throw error;
-
-        // Mostrar mensaje de éxito
-        btn.textContent = "✅ Actualizado";
-        setTimeout(() => {
-            cargarPedidos();
-        }, 500);
         
-        // Notificar al cliente si el pedido fue entregado
+        if (error) throw error;
+        
+        btn.textContent = "✅ Actualizado";
+        setTimeout(() => cargarPedidos(), 500);
+        
         if (estado === "entregado") {
             const { data: pedido } = await supabaseClient
                 .from("pedidos")
@@ -350,17 +355,8 @@ async function actualizarEstadoPedido(id) {
                 .single();
             
             if (pedido && pedido.tel_remitente) {
-                const mensaje = `✅ *PEDIDO ENTREGADO* ✅
-
-🆔 Pedido #${pedido.id}
-📦 Descripción: ${pedido.descripcion}
-
-Tu pedido ha sido marcado como entregado.
-
-¡Gracias por usar Mandaditos Express! 🛵`;
-                
-                const url = `https://wa.me/${pedido.tel_remitente}?text=${encodeURIComponent(mensaje)}`;
-                window.open(url, '_blank');
+                const mensaje = `✅ *PEDIDO ENTREGADO* ✅\n\n🆔 Pedido #${pedido.id}\n📦 Descripción: ${pedido.descripcion}\n\nTu pedido ha sido marcado como entregado.\n\n¡Gracias por usar Mandaditos Express! 🛵`;
+                window.open(`https://wa.me/${pedido.tel_remitente}?text=${encodeURIComponent(mensaje)}`, '_blank');
             }
         }
         
@@ -381,9 +377,8 @@ async function actualizarEstadoRepartidor(id) {
     const textoOriginal = btn.textContent;
     btn.textContent = "⏳ Actualizando...";
     btn.disabled = true;
-
+    
     try {
-        // Obtener datos del repartidor antes de actualizar
         const { data: repartidor } = await supabaseClient
             .from("repartidores")
             .select("*")
@@ -394,41 +389,21 @@ async function actualizarEstadoRepartidor(id) {
             .from("repartidores")
             .update({ estado })
             .eq("id", id);
-
+        
         if (error) throw error;
         
-        // Notificar al repartidor vía WhatsApp si fue activado
         if (estado === "activo" && repartidor && repartidor.telefono) {
-            const mensaje = `🎉 *¡FELICIDADES!* 🎉
-
-Hola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅
-
-🔑 Tu código de acceso es: *${repartidor.codigo}*
-
-Ingresa a: ${window.location.origin}/login-repartidor.html
-
-¡Bienvenido al equipo! 🛵`;
-            
-            const url = `https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${window.location.origin}/login-repartidor.html\n\n¡Bienvenido al equipo! 🛵`;
+            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
         
-        // Notificar si fue rechazado
         if (estado === "rechazado" && repartidor && repartidor.telefono) {
-            const mensaje = `❌ *ACTUALIZACIÓN DE REGISTRO* ❌
-
-Hola ${repartidor.nombre_completo}, lamentamos informarte que tu registro como repartidor ha sido *RECHAZADO*.
-
-Por favor contacta al administrador para más información: ${window.location.origin}`;
-            
-            const url = `https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            const mensaje = `❌ *ACTUALIZACIÓN DE REGISTRO* ❌\n\nHola ${repartidor.nombre_completo}, lamentamos informarte que tu registro como repartidor ha sido *RECHAZADO*.\n\nPor favor contacta al administrador para más información.`;
+            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
         
         btn.textContent = "✅ Actualizado";
-        setTimeout(() => {
-            cargarRepartidores();
-        }, 500);
+        setTimeout(() => cargarRepartidores(), 500);
         
     } catch (error) {
         alert("❌ Error al actualizar estado");
@@ -443,28 +418,16 @@ function abrirMaps(dir) {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}`);
 }
 
-// 🔒 Escapar HTML para prevenir XSS
-function escapeHtml(str) {
-    if (!str) return "";
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 // 📊 Cambiar de pestaña
 function cambiarPestaña(pestaña) {
     pestañaActiva = pestaña;
     
-    // Actualizar clases de los botones
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.remove("active");
     });
-    document.querySelector(`.tab-btn[data-tab="${pestaña}"]`).classList.add("active");
+    const activeBtn = document.querySelector(`.tab-btn[data-tab="${pestaña}"]`);
+    if (activeBtn) activeBtn.classList.add("active");
     
-    // Mostrar/ocultar contenedores
     if (contenedorPedidos) {
         contenedorPedidos.style.display = pestaña === "pedidos" ? "block" : "none";
     }
@@ -472,41 +435,12 @@ function cambiarPestaña(pestaña) {
         contenedorRepartidores.style.display = pestaña === "repartidores" ? "block" : "none";
     }
     
-    // Cargar datos según pestaña
     if (pestaña === "pedidos") {
         cargarPedidos();
     } else if (pestaña === "repartidores") {
         cargarRepartidores();
     }
 }
-
-// 🚀 Escuchar cambios en tiempo real
-supabaseClient
-    .channel("admin-pedidos")
-    .on("postgres_changes",
-        { event: "*", schema: "public", table: "pedidos" },
-        () => {
-            if (pestañaActiva === "pedidos") {
-                cargarPedidos();
-            }
-            // Mostrar notificación
-            mostrarNotificacion("📦 Lista de pedidos actualizada");
-        }
-    )
-    .subscribe();
-
-supabaseClient
-    .channel("admin-repartidores")
-    .on("postgres_changes",
-        { event: "*", schema: "public", table: "repartidores" },
-        () => {
-            if (pestañaActiva === "repartidores") {
-                cargarRepartidores();
-            }
-            mostrarNotificacion("🛵 Lista de repartidores actualizada");
-        }
-    )
-    .subscribe();
 
 // 🔔 Mostrar notificación
 function mostrarNotificacion(mensaje) {
@@ -528,49 +462,57 @@ function mostrarNotificacion(mensaje) {
 
 // 📊 Estadísticas rápidas
 async function cargarEstadisticas() {
-    const { data: pedidos } = await supabaseClient
-        .from("pedidos")
-        .select("*");
-    
-    const { data: repartidores } = await supabaseClient
-        .from("repartidores")
-        .select("*");
-    
-    const { data: repartidoresActivos } = await supabaseClient
-        .from("repartidores")
-        .select("*")
-        .eq("estado", "activo");
+    const { data: pedidos } = await supabaseClient.from("pedidos").select("*", { count: 'exact', head: true });
+    const { data: repartidores } = await supabaseClient.from("repartidores").select("*", { count: 'exact', head: true });
+    const { data: repartidoresActivos } = await supabaseClient.from("repartidores").select("*", { count: 'exact', head: true }).eq("estado", "activo");
     
     const estadisticasDiv = document.createElement("div");
     estadisticasDiv.className = "estadisticas";
     estadisticasDiv.innerHTML = `
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">${pedidos ? pedidos.length : 0}</div>
+                <div class="stat-number">${pedidos?.length || 0}</div>
                 <div class="stat-label">Total pedidos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">${repartidores ? repartidores.length : 0}</div>
+                <div class="stat-number">${repartidores?.length || 0}</div>
                 <div class="stat-label">Repartidores registrados</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">${repartidoresActivos ? repartidoresActivos.length : 0}</div>
+                <div class="stat-number">${repartidoresActivos?.length || 0}</div>
                 <div class="stat-label">Repartidores activos</div>
             </div>
         </div>
     `;
     
     const container = document.querySelector(".container");
-    const header = container.querySelector("h1");
+    const header = container?.querySelector("h1");
     if (header && !document.querySelector(".estadisticas")) {
         header.insertAdjacentElement("afterend", estadisticasDiv);
     }
 }
 
+// Escuchar cambios en tiempo real
+supabaseClient
+    .channel("admin-pedidos")
+    .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, () => {
+        if (pestañaActiva === "pedidos") cargarPedidos();
+        mostrarNotificacion("📦 Lista de pedidos actualizada");
+    })
+    .subscribe();
+
+supabaseClient
+    .channel("admin-repartidores")
+    .on("postgres_changes", { event: "*", schema: "public", table: "repartidores" }, () => {
+        if (pestañaActiva === "repartidores") cargarRepartidores();
+        mostrarNotificacion("🛵 Lista de repartidores actualizada");
+    })
+    .subscribe();
+
 // 🚀 Inicializar todo
 document.addEventListener("DOMContentLoaded", () => {
-    // Crear tabs si no existen
     const container = document.querySelector(".container");
+    
     if (container && !document.querySelector(".tabs")) {
         const tabsHtml = `
             <div class="tabs">
@@ -580,29 +522,25 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
         const header = container.querySelector("h1");
-        if (header) {
-            header.insertAdjacentHTML("afterend", tabsHtml);
-        }
+        if (header) header.insertAdjacentHTML("afterend", tabsHtml);
     }
     
-    // Crear contenedores si no existen
-    if (!document.getElementById("pedidos")) {
-        const pedidosDiv = document.createElement("div");
-        pedidosDiv.id = "pedidos";
-        container.appendChild(pedidosDiv);
-    }
+    contenedorPedidos = document.getElementById("pedidos") || (() => {
+        const div = document.createElement("div");
+        div.id = "pedidos";
+        container.appendChild(div);
+        return div;
+    })();
     
-    if (!document.getElementById("repartidores")) {
-        const repartidoresDiv = document.createElement("div");
-        repartidoresDiv.id = "repartidores";
-        repartidoresDiv.style.display = "none";
-        container.appendChild(repartidoresDiv);
-    }
+    contenedorRepartidores = document.getElementById("repartidores") || (() => {
+        const div = document.createElement("div");
+        div.id = "repartidores";
+        div.style.display = "none";
+        container.appendChild(div);
+        return div;
+    })();
     
-    // Cargar estadísticas
     cargarEstadisticas();
-    
-    // Cargar datos iniciales
     cargarPedidos();
 });
 
