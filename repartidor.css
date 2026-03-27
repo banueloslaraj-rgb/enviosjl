@@ -3,6 +3,7 @@ body {
   background: #eef2f7;
   margin: 0;
   padding: 10px;
+  -webkit-tap-highlight-color: transparent; /* Mejor para iOS */
 }
 
 .container {
@@ -17,16 +18,16 @@ h1 {
   margin-bottom: 20px;
 }
 
-/* Estilos para inputs y botones generales */
 input, button {
   width: 100%;
   margin-top: 10px;
   padding: 12px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  font-size: 14px;
+  font-size: 16px; /* Mejor para iOS (evita zoom automático) */
   transition: all 0.2s ease;
   box-sizing: border-box;
+  -webkit-appearance: none; /* Mejor para iOS */
 }
 
 input:focus {
@@ -52,7 +53,6 @@ button:active {
   transform: scale(0.98);
 }
 
-/* Tarjetas de pedidos */
 .card {
   background: white;
   padding: 15px;
@@ -63,7 +63,6 @@ button:active {
   overflow: hidden;
 }
 
-/* Colores según estado */
 .card.estado-pendiente {
   background: linear-gradient(135deg, #ffffff 0%, #d4edda 100%);
   border-left: 6px solid #28a745;
@@ -80,7 +79,6 @@ button:active {
   opacity: 0.9;
 }
 
-/* Header del pedido */
 .pedido-header {
   display: flex;
   justify-content: space-between;
@@ -105,11 +103,11 @@ button:active {
   border-radius: 12px;
 }
 
-/* Estilos de texto */
 .card p {
   margin: 8px 0;
   line-height: 1.4;
   font-size: 14px;
+  word-break: break-word; /* Evita desbordamiento en iOS */
 }
 
 .card p strong {
@@ -118,19 +116,17 @@ button:active {
   display: inline-block;
 }
 
-/* Botones de mapa */
 .map-btn {
   background: #007bff;
   margin: 5px 0;
   padding: 10px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .map-btn:hover {
   background: #0056b3;
 }
 
-/* Botones de llamada */
 .btn-call {
   display: inline-block;
   margin: 5px 5px 5px 0;
@@ -140,7 +136,7 @@ button:active {
   border-radius: 8px;
   text-decoration: none;
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   transition: all 0.2s ease;
 }
 
@@ -153,7 +149,7 @@ button:active {
   transform: scale(0.98);
 }
 
-/* Contenedor de imágenes - ARREGLADO */
+/* Contenedor de imágenes mejorado para iOS */
 .imagenes {
   margin-top: 12px;
   padding-top: 10px;
@@ -171,6 +167,7 @@ button:active {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .imagenes img {
@@ -181,14 +178,15 @@ button:active {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid #ddd;
+  background-color: #f8f9fa;
+  -webkit-backface-visibility: hidden; /* Mejor rendimiento en iOS */
+  backface-visibility: hidden;
 }
 
-.imagenes img:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+.imagenes img:active {
+  transform: scale(0.95);
 }
 
-/* Badge de estado */
 .estado-texto {
   display: inline-block;
   padding: 4px 12px;
@@ -198,7 +196,6 @@ button:active {
   background: #f0f0f0;
 }
 
-/* Contenedor de botones de acción */
 .botones-accion {
   display: flex;
   gap: 10px;
@@ -210,10 +207,9 @@ button:active {
   flex: 1;
   margin-top: 0;
   padding: 10px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
-/* WhatsApp flotante */
 .wpp-btn {
   position: fixed;
   bottom: 20px;
@@ -233,16 +229,10 @@ button:active {
   z-index: 1000;
 }
 
-.wpp-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-}
-
 .wpp-btn:active {
   transform: scale(0.95);
 }
 
-/* Loader */
 .loader {
   text-align: center;
   padding: 40px;
@@ -279,13 +269,26 @@ button:active {
   }
   
   .imagenes img {
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
   }
   
   .btn-call {
     display: block;
     text-align: center;
     margin: 5px 0;
+  }
+}
+
+/* Mejoras específicas para iOS */
+@supports (-webkit-touch-callout: none) {
+  /* CSS específico para iOS */
+  .imagenes img {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  button, .btn-call {
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
   }
 }
