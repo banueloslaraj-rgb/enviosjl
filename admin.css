@@ -10,12 +10,55 @@ body {
   margin: auto;
 }
 
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+/* Botón cerrar sesión */
+.logout-btn {
+  background: #dc3545;
+  margin-bottom: 20px;
+}
+
+.logout-btn:hover {
+  background: #c82333;
+}
+
+/* Estilos para las tarjetas con colores según estado */
 .card {
   background: white;
   padding: 15px;
   margin-top: 10px;
   border-radius: 15px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  border-left: 8px solid #ddd;
+}
+
+/* Pedido pendiente - VERDE */
+.card.estado-pendiente {
+  background: linear-gradient(135deg, #ffffff 0%, #d4edda 100%);
+  border-left: 8px solid #28a745;
+}
+
+/* Pedido asignado - AZUL */
+.card.estado-asignado {
+  background: linear-gradient(135deg, #ffffff 0%, #cce5ff 100%);
+  border-left: 8px solid #007bff;
+}
+
+/* Pedido en camino - CELESTE */
+.card.estado-en-camino {
+  background: linear-gradient(135deg, #ffffff 0%, #d1ecf1 100%);
+  border-left: 8px solid #17a2b8;
+}
+
+/* Pedido entregado - GRIS */
+.card.estado-entregado {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e3e5 100%);
+  border-left: 8px solid #6c757d;
+  opacity: 0.85;
 }
 
 button, select {
@@ -38,6 +81,7 @@ button {
 button:hover {
   background: #219a52;
   transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 button:active {
@@ -52,6 +96,7 @@ select {
 
 select:hover {
   border-color: #27ae60;
+  background: #f8f9fa;
 }
 
 .imagenes img {
@@ -59,16 +104,17 @@ select:hover {
   margin: 5px;
   border-radius: 10px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .imagenes img:hover {
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .btn-call {
   display: inline-block;
-  margin: 5px 0;
+  margin: 5px 5px 5px 0;
   padding: 8px 12px;
   background: #27ae60;
   color: white;
@@ -87,30 +133,79 @@ select:hover {
   transform: scale(0.98);
 }
 
-/* Agrega esto al final de admin.css */
-
-.estado-texto {
-  font-weight: bold;
-  padding: 3px 8px;
-  border-radius: 20px;
+/* Badge de estado */
+.estado-badge {
   display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
-select {
-  cursor: pointer;
-  transition: all 0.2s ease;
+.estado-pendiente-badge {
+  background: #28a745;
+  color: white;
 }
 
-select:hover {
-  border-color: #27ae60;
+.estado-asignado-badge {
+  background: #007bff;
+  color: white;
 }
 
-.card button:active, .card .btn-call:active {
-  transform: scale(0.98);
+.estado-en-camino-badge {
+  background: #17a2b8;
+  color: white;
+}
+
+.estado-entregado-badge {
+  background: #6c757d;
+  color: white;
+}
+
+/* Número de pedido */
+.pedido-id {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 2px solid #27ae60;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+/* Fecha */
+.pedido-fecha {
+  font-size: 12px;
+  color: #666;
+  float: right;
 }
 
 /* Animación de carga */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.loader {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .card {
+    padding: 12px;
+  }
+  
+  button, select {
+    padding: 10px;
+  }
+  
+  .imagenes img {
+    width: 70px;
+  }
 }

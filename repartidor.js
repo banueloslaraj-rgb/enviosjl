@@ -27,12 +27,12 @@ function guardar() {
 }
 
 async function cargarPedidos() {
-  contenedor.innerHTML = '<div style="text-align:center; padding:20px;">🔄 Cargando pedidos...</div>';
+  contenedor.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
 
   const { data, error } = await supabaseClient
     .from("pedidos")
     .select("*")
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false }); // 🔥 MÁS RECIENTES PRIMERO
 
   if (error) {
     contenedor.innerHTML = '<div style="color:red;">❌ Error al cargar pedidos</div>';
@@ -63,10 +63,22 @@ async function cargarPedidos() {
       }
 
       // Formatear fecha si existe
-      const fecha = p.fecha ? new Date(p.fecha).toLocaleString() : "Sin fecha";
+      let fechaFormateada = "Sin fecha";
+      if (p.fecha) {
+        const fechaObj = new Date(p.fecha);
+        fechaFormateada = fechaObj.toLocaleString('es-MX', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
 
       card.innerHTML = `
-        <p><strong>🆔 Pedido #${p.id}</strong> <small>${fecha}</small></p>
+        <div class="pedido-header">
+          <strong>🆔 Pedido #${p.id}</strong>
+          <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+        </div>
         <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
         <button class="map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
 
@@ -82,24 +94,30 @@ async function cargarPedidos() {
         <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar al destinatario</a>
 
         <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
-        <p><strong>💰 Pago producto:</strong> $${p.precio}</p>
+        <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
         <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
         <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
 
         <div class="imagenes">
-          ${(p.fotos || []).map(f => `<img src="${f}" onclick="verImagen('${f}')" />`).join("")}
+          ${(p.fotos || []).length > 0 ? 
+            (p.fotos || []).map(f => `<img src="${f}" onclick="verImagen('${f}')" />`).join("") : 
+            "<small>Sin fotos</small>"}
         </div>
       `;
 
       // Botones según estado
       const btnContainer = document.createElement("div");
       btnContainer.style.marginTop = "10px";
+      btnContainer.style.display = "flex";
+      btnContainer.style.gap = "10px";
+      btnContainer.style.flexWrap = "wrap";
 
       if (p.estado === "pendiente") {
         const btnAceptar = document.createElement("button");
         btnAceptar.textContent = "✅ Aceptar pedido";
         btnAceptar.onclick = () => aceptarPedido(p.id);
         btnAceptar.style.background = "#28a745";
+        btnAceptar.style.flex = "1";
         btnContainer.appendChild(btnAceptar);
       }
 
@@ -108,11 +126,13 @@ async function cargarPedidos() {
         btnEnCamino.textContent = "🚚 En camino";
         btnEnCamino.onclick = () => cambiarEstado(p.id, "en camino");
         btnEnCamino.style.background = "#17a2b8";
+        btnEnCamino.style.flex = "1";
         
         const btnEntregado = document.createElement("button");
         btnEntregado.textContent = "✅ Entregado";
         btnEntregado.onclick = () => cambiarEstado(p.id, "entregado");
         btnEntregado.style.background = "#6c757d";
+        btnEntregado.style.flex = "1";
         
         btnContainer.appendChild(btnEnCamino);
         btnContainer.appendChild(btnEntregado);
@@ -123,6 +143,7 @@ async function cargarPedidos() {
         btnEntregado.textContent = "✅ Marcar como entregado";
         btnEntregado.onclick = () => cambiarEstado(p.id, "entregado");
         btnEntregado.style.background = "#28a745";
+        btnEntregado.style.flex = "1";
         btnContainer.appendChild(btnEntregado);
       }
 
@@ -138,7 +159,6 @@ async function aceptarPedido(id) {
     return;
   }
 
-  // Mostrar feedback visual
   const btn = event.target;
   const textoOriginal = btn.textContent;
   btn.textContent = "⏳ Procesando...";
@@ -159,7 +179,6 @@ async function aceptarPedido(id) {
 }
 
 async function cambiarEstado(id, nuevoEstado) {
-  // Mostrar feedback visual
   const btn = event.target;
   const textoOriginal = btn.textContent;
   btn.textContent = "⏳ Actualizando...";
@@ -188,18 +207,14 @@ function verImagen(url) {
   window.open(url, "_blank");
 }
 
-// Escuchar cambios en tiempo real con efecto de notificación
+// Escuchar cambios en tiempo real
 supabaseClient
   .channel("pedidos")
   .on("postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
     (payload) => {
-      // Reproducir sonido opcional (si se desea)
-      // new Audio('notification.mp3').play();
-      
-      // Mostrar notificación visual
       const notif = document.createElement("div");
-      notif.textContent = "📦 ¡Nuevo pedido disponible!";
+      notif.textContent = "📦 ¡Actualización de pedidos!";
       notif.style.position = "fixed";
       notif.style.bottom = "80px";
       notif.style.right = "20px";

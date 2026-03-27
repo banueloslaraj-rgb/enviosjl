@@ -17,14 +17,47 @@ function logout() {
   window.location = "admin-login.html";
 }
 
-// 📦 Cargar pedidos
+// Función para obtener color según estado
+function getEstadoColor(estado) {
+  switch(estado) {
+    case "pendiente": return "#28a745";
+    case "asignado": return "#007bff";
+    case "en camino": return "#17a2b8";
+    case "entregado": return "#6c757d";
+    default: return "black";
+  }
+}
+
+// Función para obtener clase CSS según estado
+function getEstadoClass(estado) {
+  switch(estado) {
+    case "pendiente": return "estado-pendiente";
+    case "asignado": return "estado-asignado";
+    case "en camino": return "estado-en-camino";
+    case "entregado": return "estado-entregado";
+    default: return "";
+  }
+}
+
+// Función para obtener badge del estado
+function getEstadoBadge(estado) {
+  const badges = {
+    "pendiente": '<span class="estado-badge estado-pendiente-badge">📦 PENDIENTE</span>',
+    "asignado": '<span class="estado-badge estado-asignado-badge">🛵 ASIGNADO</span>',
+    "en camino": '<span class="estado-badge estado-en-camino-badge">🚚 EN CAMINO</span>',
+    "entregado": '<span class="estado-badge estado-entregado-badge">✅ ENTREGADO</span>'
+  };
+  return badges[estado] || `<span class="estado-badge">${estado}</span>`;
+}
+
+// 📦 Cargar pedidos ordenados por fecha (más recientes primero)
 async function cargarPedidos() {
-  contenedor.innerHTML = '<div style="text-align:center; padding:20px;">🔄 Cargando pedidos...</div>';
+  contenedor.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
 
   const { data, error } = await supabaseClient
     .from("pedidos")
     .select("*")
-    .order("id", { ascending: false });
+    .order("fecha", { ascending: false }); // 🔥 MÁS RECIENTES PRIMERO
 
   console.log("DATA:", data);
   console.log("ERROR:", error);
@@ -43,12 +76,27 @@ async function cargarPedidos() {
 
   data.forEach(p => {
     const card = document.createElement("div");
-    card.className = "card";
-
-    const fecha = p.fecha ? new Date(p.fecha).toLocaleString() : "Sin fecha";
+    card.className = `card ${getEstadoClass(p.estado)}`; // 🔥 AÑADIR CLASE DE COLOR
+    
+    // Formatear fecha
+    let fechaFormateada = "Sin fecha";
+    if (p.fecha) {
+      const fechaObj = new Date(p.fecha);
+      fechaFormateada = fechaObj.toLocaleString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
 
     card.innerHTML = `
-      <p><strong>🆔 Pedido #${p.id}</strong> <small>${fecha}</small></p>
+      <div class="pedido-id">
+        🆔 Pedido #${p.id}
+        <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+      </div>
+      
       <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
       <button onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
 
@@ -57,29 +105,32 @@ async function cargarPedidos() {
 
       <p><strong>👤 Envía:</strong> ${p.remitente}</p>
       <p><strong>📞 Tel:</strong> ${p.tel_remitente || "No disponible"}</p>
-      <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar</a>
+      <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar remitente</a>
 
       <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
       <p><strong>📞 Tel:</strong> ${p.tel_destinatario || "No disponible"}</p>
-      <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar</a>
+      <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar destinatario</a>
 
       <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
-      <p><strong>💰 Pago:</strong> $${p.precio}</p>
-      <p><strong>🚚 Envío:</strong> ${p.envio}</p>
-      <p><strong>🛵 Repartidor:</strong> ${p.repartidor_id || "Sin asignar"}</p>
-      <p><strong>📊 Estado:</strong> <strong style="color:${getEstadoColor(p.estado)}">${p.estado.toUpperCase()}</strong></p>
+      <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
+      <p><strong>🚚 Costo envío:</strong> <strong>${p.envio}</strong></p>
+      <p><strong>🛵 Repartidor:</strong> ${p.repartidor_id || "❌ Sin asignar"}</p>
+      <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado)}</p>
 
-      <select id="estado-${p.id}">
-        <option ${p.estado === "pendiente" ? "selected" : ""}>pendiente</option>
-        <option ${p.estado === "asignado" ? "selected" : ""}>asignado</option>
-        <option ${p.estado === "en camino" ? "selected" : ""}>en camino</option>
-        <option ${p.estado === "entregado" ? "selected" : ""}>entregado</option>
+      <select id="estado-${p.id}" style="margin-top: 10px;">
+        <option value="pendiente" ${p.estado === "pendiente" ? "selected" : ""}>📦 Pendiente</option>
+        <option value="asignado" ${p.estado === "asignado" ? "selected" : ""}>🛵 Asignado</option>
+        <option value="en camino" ${p.estado === "en camino" ? "selected" : ""}>🚚 En camino</option>
+        <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
       </select>
 
-      <button onclick="actualizarEstado(${p.id})">🔄 Actualizar estado</button>
+      <button onclick="actualizarEstado(${p.id})" style="margin-top: 5px;">🔄 Actualizar estado</button>
 
-      <div class="imagenes">
-        ${(p.fotos || []).map(f => `<img src="${f}" onclick="window.open('${f}','_blank')">`).join("")}
+      <div class="imagenes" style="margin-top: 10px;">
+        <strong>📸 Fotos:</strong><br>
+        ${(p.fotos || []).length > 0 ? 
+          (p.fotos || []).map(f => `<img src="${f}" onclick="window.open('${f}','_blank')">`).join("") : 
+          "No hay fotos"}
       </div>
     `;
 
@@ -87,19 +138,12 @@ async function cargarPedidos() {
   });
 }
 
-function getEstadoColor(estado) {
-  switch(estado) {
-    case "pendiente": return "#28a745";
-    case "asignado": return "#007bff";
-    case "en camino": return "#17a2b8";
-    case "entregado": return "#6c757d";
-    default: return "black";
-  }
-}
-
 // 🔄 Actualizar estado
 async function actualizarEstado(id) {
-  const estado = document.getElementById(`estado-${id}`).value;
+  const selectElement = document.getElementById(`estado-${id}`);
+  if (!selectElement) return;
+  
+  const estado = selectElement.value;
   
   const btn = event.target;
   const textoOriginal = btn.textContent;
@@ -107,14 +151,21 @@ async function actualizarEstado(id) {
   btn.disabled = true;
 
   try {
-    await supabaseClient
+    const { error } = await supabaseClient
       .from("pedidos")
       .update({ estado })
       .eq("id", id);
 
-    cargarPedidos();
+    if (error) throw error;
+
+    // Mostrar mensaje de éxito
+    btn.textContent = "✅ Actualizado";
+    setTimeout(() => {
+      cargarPedidos();
+    }, 500);
+    
   } catch (error) {
-    alert("Error al actualizar");
+    alert("❌ Error al actualizar estado");
     btn.textContent = textoOriginal;
     btn.disabled = false;
   }
@@ -122,17 +173,35 @@ async function actualizarEstado(id) {
 
 // 📍 Abrir en Google Maps
 function abrirMaps(dir) {
+  if (!dir) return;
   window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}`);
 }
-
-// 🚀 Ejecutar
-cargarPedidos();
 
 // Escuchar cambios en tiempo real
 supabaseClient
   .channel("admin-pedidos")
   .on("postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
-    () => cargarPedidos()
+    () => {
+      // Mostrar notificación visual de cambio
+      const notif = document.createElement("div");
+      notif.textContent = "🔄 Lista de pedidos actualizada";
+      notif.style.position = "fixed";
+      notif.style.bottom = "20px";
+      notif.style.right = "20px";
+      notif.style.background = "#27ae60";
+      notif.style.color = "white";
+      notif.style.padding = "10px 15px";
+      notif.style.borderRadius = "10px";
+      notif.style.zIndex = "1000";
+      notif.style.animation = "pulse 0.5s ease";
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 2000);
+      
+      cargarPedidos();
+    }
   )
   .subscribe();
+
+// 🚀 Ejecutar carga inicial
+cargarPedidos();

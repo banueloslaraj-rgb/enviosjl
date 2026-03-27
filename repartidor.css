@@ -1,137 +1,48 @@
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #eef2f7;
-  margin: 0;
-  padding: 10px;
+/* Agregar estos estilos al final de repartidor.css */
+
+.pedido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #27ae60;
 }
 
-.container {
-  max-width: 700px;
-  margin: auto;
-}
-
-input, button {
-  width: 100%;
-  margin-top: 10px;
-  padding: 12px;
+.pedido-fecha {
+  font-size: 11px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 6px;
   border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 16px;
-  transition: all 0.2s ease;
 }
 
-input:focus {
-  border-color: #27ae60;
-  outline: none;
-  box-shadow: 0 0 5px rgba(39,174,96,0.3);
-}
-
-button {
-  background: #27ae60;
-  color: white;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #219a52;
-  transform: scale(1.02);
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* Estilos para las tarjetas con colores según estado */
-.card {
-  background: white;
-  padding: 15px;
-  margin-top: 10px;
-  border-radius: 15px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* Pedido nuevo (pendiente) - VERDE */
-.card.estado-pendiente {
-  background: #d4edda;
-  border-left: 8px solid #28a745;
-  animation: pulse 0.5s ease;
-}
-
-/* Pedido aceptado (asignado) - AZUL */
-.card.estado-asignado {
-  background: #cce5ff;
-  border-left: 8px solid #007bff;
-}
-
-/* Pedido entregado - GRIS/MORADO */
-.card.estado-entregado {
-  background: #e2e3e5;
-  border-left: 8px solid #6c757d;
-  opacity: 0.8;
-}
-
-/* Animación para nuevos pedidos */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-.wpp-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #25D366;
-  color: white;
-  padding: 15px;
-  border-radius: 50%;
-  text-decoration: none;
-  font-size: 24px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-
-.wpp-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.wpp-btn:active {
-  transform: scale(0.95);
-}
-
-.imagenes img {
-  width: 80px;
-  margin: 5px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.imagenes img:hover {
-  transform: scale(1.05);
-}
-
-.btn-call {
-  display: inline-block;
-  margin: 5px 5px 5px 0;
-  padding: 8px 12px;
-  background: #27ae60;
-  color: white;
-  border-radius: 8px;
-  text-decoration: none;
+.loader {
   text-align: center;
-  transition: all 0.2s ease;
+  padding: 40px;
+  font-size: 18px;
+  color: #27ae60;
 }
 
-.btn-call:hover {
-  background: #219a52;
-  transform: scale(1.02);
+.estado-texto {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: bold;
+  background: #f0f0f0;
 }
 
-.btn-call:active {
-  transform: scale(0.98);
+.card button {
+  margin-right: 5px;
+}
+
+@media (max-width: 600px) {
+  .card button {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .btnContainer {
+    flex-direction: column;
+  }
 }
