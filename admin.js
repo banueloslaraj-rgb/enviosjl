@@ -69,11 +69,20 @@ async function cargarPedidos() {
         .select("*")
         .order("fecha", { ascending: false });
 
-    console.log("Pedidos cargados:", data);
+    // LOGS PARA DIAGNÓSTICO
+    console.log("=== DIAGNÓSTICO DE PEDIDOS ===");
+    console.log("Cantidad de pedidos encontrados:", data?.length || 0);
+    console.log("Primer pedido:", data?.[0]);
     console.log("Error:", error);
-
+    
+    // Verificar si hay RLS bloqueando
     if (error) {
-        contenedorPedidos.innerHTML = '<div class="error-message">❌ Error cargando pedidos</div>';
+        console.error("❌ Error al cargar pedidos:", error);
+        if (error.message?.includes("row level security") || error.code === "42501") {
+            contenedorPedidos.innerHTML = '<div class="error-message">⚠️ Error de permisos (RLS). Contacta al administrador para configurar las políticas de seguridad.</div>';
+        } else {
+            contenedorPedidos.innerHTML = '<div class="error-message">❌ Error cargando pedidos: ' + error.message + '</div>';
+        }
         return;
     }
 
@@ -171,7 +180,11 @@ async function cargarRepartidores() {
     console.log("Error:", error);
 
     if (error) {
-        contenedorRepartidores.innerHTML = '<div class="error-message">❌ Error cargando repartidores</div>';
+        if (error.message?.includes("row level security") || error.code === "42501") {
+            contenedorRepartidores.innerHTML = '<div class="error-message">⚠️ Error de permisos (RLS). Contacta al administrador.</div>';
+        } else {
+            contenedorRepartidores.innerHTML = '<div class="error-message">❌ Error cargando repartidores</div>';
+        }
         return;
     }
 
