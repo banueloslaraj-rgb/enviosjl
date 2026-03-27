@@ -166,7 +166,7 @@ async function cargarPedidos() {
                     <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoPedido(${p.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoPedido(${p.id}, event)" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
                 
                 ${imagenesHtml}
             `;
@@ -177,6 +177,88 @@ async function cargarPedidos() {
     } catch (error) {
         console.error("❌ Error fatal en cargarPedidos:", error);
         contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+    }
+}
+
+// 🔄 Actualizar estado de pedido - VERSIÓN CORREGIDA CON EVENT
+async function actualizarEstadoPedido(id, event) {
+    console.log("🔄 Actualizando estado del pedido:", id);
+    
+    const selectElement = document.getElementById(`estado-${id}`);
+    if (!selectElement) {
+        console.error("❌ No se encontró el select para el pedido:", id);
+        alert("Error: No se encontró el selector de estado");
+        return;
+    }
+    
+    const nuevoEstado = selectElement.value;
+    console.log("📊 Nuevo estado seleccionado:", nuevoEstado);
+    
+    // Encontrar el botón que disparó el evento
+    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoPedido(${id}"]`);
+    if (!btn) {
+        console.error("❌ No se encontró el botón");
+        return;
+    }
+    
+    const textoOriginal = btn.textContent;
+    btn.textContent = "⏳ Actualizando...";
+    btn.disabled = true;
+    
+    try {
+        // Primero obtener el pedido actual para notificaciones
+        const { data: pedidoActual, error: getError } = await supabaseClient
+            .from("pedidos")
+            .select("*")
+            .eq("id", id)
+            .single();
+        
+        if (getError) {
+            console.error("Error obteniendo pedido:", getError);
+        }
+        
+        // Actualizar el estado
+        const { error: updateError } = await supabaseClient
+            .from("pedidos")
+            .update({ estado: nuevoEstado })
+            .eq("id", id);
+        
+        if (updateError) {
+            console.error("Error al actualizar:", updateError);
+            throw updateError;
+        }
+        
+        console.log("✅ Estado actualizado correctamente");
+        
+        // Cambiar texto del botón temporalmente
+        btn.textContent = "✅ Actualizado";
+        setTimeout(() => {
+            btn.textContent = textoOriginal;
+            btn.disabled = false;
+        }, 2000);
+        
+        // Recargar los pedidos para mostrar el cambio
+        setTimeout(() => {
+            cargarPedidos();
+        }, 500);
+        
+        // Notificar al cliente si el pedido fue entregado
+        if (nuevoEstado === "entregado" && pedidoActual && pedidoActual.tel_remitente) {
+            const mensaje = `✅ *PEDIDO ENTREGADO* ✅\n\n🆔 Pedido #${pedidoActual.id}\n📦 Descripción: ${pedidoActual.descripcion}\n\nTu pedido ha sido marcado como entregado.\n\n¡Gracias por usar Mandaditos Express! 🛵`;
+            window.open(`https://wa.me/${pedidoActual.tel_remitente}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+        
+        // Notificar al repartidor si el pedido fue asignado
+        if (nuevoEstado === "asignado" && pedidoActual && pedidoActual.repartidor_telefono) {
+            const mensaje = `🚚 *PEDIDO ASIGNADO* 🚚\n\n🆔 Pedido #${pedidoActual.id}\n📍 Recolección: ${pedidoActual.recoleccion}\n📍 Entrega: ${pedidoActual.entrega}\n\nPor favor confirma que recibiste el pedido.`;
+            window.open(`https://wa.me/${pedidoActual.repartidor_telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+        
+    } catch (error) {
+        console.error("❌ Error al actualizar estado:", error);
+        alert(`❌ Error al actualizar estado: ${error.message || "Intenta de nuevo"}`);
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
     }
 }
 
@@ -280,7 +362,7 @@ async function cargarRepartidores() {
                     <option value="rechazado" ${r.estado === "rechazado" ? "selected" : ""}>❌ Rechazado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoRepartidor(${r.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoRepartidor(${r.id}, event)" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
             `;
             
             contenedorRepartidores.appendChild(card);
@@ -289,6 +371,58 @@ async function cargarRepartidores() {
     } catch (error) {
         console.error("Error cargando repartidores:", error);
         contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+    }
+}
+
+// 🔄 Actualizar estado de repartidor
+async function actualizarEstadoRepartidor(id, event) {
+    const selectElement = document.getElementById(`estado-rep-${id}`);
+    if (!selectElement) return;
+    
+    const estado = selectElement.value;
+    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoRepartidor(${id}"]`);
+    if (!btn) return;
+    
+    const textoOriginal = btn.textContent;
+    btn.textContent = "⏳ Actualizando...";
+    btn.disabled = true;
+    
+    try {
+        const { data: repartidor } = await supabaseClient
+            .from("repartidores")
+            .select("*")
+            .eq("id", id)
+            .single();
+        
+        const { error } = await supabaseClient
+            .from("repartidores")
+            .update({ estado })
+            .eq("id", id);
+        
+        if (error) throw error;
+        
+        btn.textContent = "✅ Actualizado";
+        
+        if (estado === "activo" && repartidor && repartidor.telefono) {
+            const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${window.location.origin}/login-repartidor.html\n\n¡Bienvenido al equipo! 🛵`;
+            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+        
+        if (estado === "rechazado" && repartidor && repartidor.telefono) {
+            const mensaje = `❌ *ACTUALIZACIÓN DE REGISTRO* ❌\n\nHola ${repartidor.nombre_completo}, lamentamos informarte que tu registro como repartidor ha sido *RECHAZADO*.\n\nPor favor contacta al administrador para más información.`;
+            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+        
+        setTimeout(() => {
+            btn.textContent = textoOriginal;
+            btn.disabled = false;
+            cargarRepartidores();
+        }, 1500);
+        
+    } catch (error) {
+        alert("❌ Error al actualizar estado");
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
     }
 }
 
@@ -353,93 +487,6 @@ async function verDocumentosRepartidor(id, nombre) {
     });
 }
 
-// 🔄 Actualizar estado de pedido
-async function actualizarEstadoPedido(id) {
-    const selectElement = document.getElementById(`estado-${id}`);
-    if (!selectElement) return;
-    
-    const estado = selectElement.value;
-    const btn = event.target;
-    const textoOriginal = btn.textContent;
-    btn.textContent = "⏳ Actualizando...";
-    btn.disabled = true;
-    
-    try {
-        const { error } = await supabaseClient
-            .from("pedidos")
-            .update({ estado })
-            .eq("id", id);
-        
-        if (error) throw error;
-        
-        btn.textContent = "✅ Actualizado";
-        setTimeout(() => cargarPedidos(), 500);
-        
-        if (estado === "entregado") {
-            const { data: pedido } = await supabaseClient
-                .from("pedidos")
-                .select("*")
-                .eq("id", id)
-                .single();
-            
-            if (pedido && pedido.tel_remitente) {
-                const mensaje = `✅ *PEDIDO ENTREGADO* ✅\n\n🆔 Pedido #${pedido.id}\n📦 Descripción: ${pedido.descripcion}\n\nTu pedido ha sido marcado como entregado.\n\n¡Gracias por usar Mandaditos Express! 🛵`;
-                window.open(`https://wa.me/${pedido.tel_remitente}?text=${encodeURIComponent(mensaje)}`, '_blank');
-            }
-        }
-        
-    } catch (error) {
-        alert("❌ Error al actualizar estado");
-        btn.textContent = textoOriginal;
-        btn.disabled = false;
-    }
-}
-
-// 🔄 Actualizar estado de repartidor
-async function actualizarEstadoRepartidor(id) {
-    const selectElement = document.getElementById(`estado-rep-${id}`);
-    if (!selectElement) return;
-    
-    const estado = selectElement.value;
-    const btn = event.target;
-    const textoOriginal = btn.textContent;
-    btn.textContent = "⏳ Actualizando...";
-    btn.disabled = true;
-    
-    try {
-        const { data: repartidor } = await supabaseClient
-            .from("repartidores")
-            .select("*")
-            .eq("id", id)
-            .single();
-        
-        const { error } = await supabaseClient
-            .from("repartidores")
-            .update({ estado })
-            .eq("id", id);
-        
-        if (error) throw error;
-        
-        if (estado === "activo" && repartidor && repartidor.telefono) {
-            const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${window.location.origin}/login-repartidor.html\n\n¡Bienvenido al equipo! 🛵`;
-            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-        
-        if (estado === "rechazado" && repartidor && repartidor.telefono) {
-            const mensaje = `❌ *ACTUALIZACIÓN DE REGISTRO* ❌\n\nHola ${repartidor.nombre_completo}, lamentamos informarte que tu registro como repartidor ha sido *RECHAZADO*.\n\nPor favor contacta al administrador para más información.`;
-            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-        
-        btn.textContent = "✅ Actualizado";
-        setTimeout(() => cargarRepartidores(), 500);
-        
-    } catch (error) {
-        alert("❌ Error al actualizar estado");
-        btn.textContent = textoOriginal;
-        btn.disabled = false;
-    }
-}
-
 // 📍 Abrir en Google Maps
 function abrirMaps(dir) {
     if (!dir) return;
@@ -493,24 +540,33 @@ function mostrarNotificacion(mensaje) {
 
 // 📊 Estadísticas rápidas
 async function cargarEstadisticas() {
-    const { data: pedidos } = await supabaseClient.from("pedidos").select("*", { count: 'exact', head: true });
-    const { data: repartidores } = await supabaseClient.from("repartidores").select("*", { count: 'exact', head: true });
-    const { data: repartidoresActivos } = await supabaseClient.from("repartidores").select("*", { count: 'exact', head: true }).eq("estado", "activo");
+    const { data: pedidos, count: pedidosCount } = await supabaseClient
+        .from("pedidos")
+        .select("*", { count: 'exact', head: true });
+    
+    const { data: repartidores, count: repartidoresCount } = await supabaseClient
+        .from("repartidores")
+        .select("*", { count: 'exact', head: true });
+    
+    const { data: repartidoresActivos, count: activosCount } = await supabaseClient
+        .from("repartidores")
+        .select("*", { count: 'exact', head: true })
+        .eq("estado", "activo");
     
     const estadisticasDiv = document.createElement("div");
     estadisticasDiv.className = "estadisticas";
     estadisticasDiv.innerHTML = `
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">${pedidos?.length || 0}</div>
+                <div class="stat-number">${pedidosCount || 0}</div>
                 <div class="stat-label">Total pedidos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">${repartidores?.length || 0}</div>
+                <div class="stat-number">${repartidoresCount || 0}</div>
                 <div class="stat-label">Repartidores registrados</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">${repartidoresActivos?.length || 0}</div>
+                <div class="stat-number">${activosCount || 0}</div>
                 <div class="stat-label">Repartidores activos</div>
             </div>
         </div>
