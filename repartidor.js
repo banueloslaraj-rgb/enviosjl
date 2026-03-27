@@ -4,84 +4,34 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const contenedor = document.getElementById("pedidos");
-let repartidor = localStorage.getItem("repartidor") || "";
 
-// Detectar si es iOS
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// Obtener datos del repartidor desde localStorage
+const repartidorId = localStorage.getItem("repartidor_id");
+const repartidorNombre = localStorage.getItem("repartidor_nombre");
+const repartidorTelefono = localStorage.getItem("repartidor_telefono");
 
-// Función para obtener URL de imagen compatible con iOS
-function getImageUrl(url) {
-    if (!url) return "";
-    
-    // Si es iOS, añadir timestamp para evitar caché
-    if (isIOS) {
-        // Asegurar que la URL tenga https
-        let fixedUrl = url;
-        if (fixedUrl.startsWith('http://')) {
-            fixedUrl = fixedUrl.replace('http://', 'https://');
-        }
-        // Añadir timestamp para evitar caché en iOS
-        const separator = fixedUrl.includes('?') ? '&' : '?';
-        return `${fixedUrl}${separator}t=${Date.now()}`;
-    }
-    return url;
+// Verificar si está logueado
+if (!repartidorId || !repartidorNombre) {
+    window.location.href = "login-repartidor.html";
 }
 
-// Función para verificar si una imagen carga correctamente
-function testImageUrl(url, callback) {
-    const img = new Image();
-    img.onload = () => callback(true);
-    img.onerror = () => callback(false);
-    img.src = url;
-}
+// Mostrar nombre del repartidor
+const nombreHeader = document.createElement("div");
+nombreHeader.className = "repartidor-info";
+nombreHeader.innerHTML = `
+    <div style="background: #27ae60; color: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+        🛵 Bienvenido, <strong>${repartidorNombre}</strong>
+        <button onclick="cerrarSesion()" style="background: #dc3545; margin-top: 8px; padding: 5px 10px; font-size: 12px;">Cerrar sesión</button>
+    </div>
+`;
+document.querySelector(".container").insertBefore(nombreHeader, contenedor);
 
-// Función para cargar imágenes con fallback
-function crearImagenConFallback(url, index) {
-    const img = document.createElement('img');
-    const urlConTimestamp = getImageUrl(url);
-    
-    img.src = urlConTimestamp;
-    img.loading = "lazy";
-    img.style.width = "70px";
-    img.style.height = "70px";
-    img.style.objectFit = "cover";
-    img.style.borderRadius = "8px";
-    img.style.cursor = "pointer";
-    img.style.border = "1px solid #ddd";
-    img.style.backgroundColor = "#f8f9fa";
-    
-    // Evento para abrir imagen en nueva ventana al hacer clic
-    img.onclick = () => {
-        window.open(url, "_blank");
-    };
-    
-    // Si falla la carga, intentar con URL alternativa
-    img.onerror = () => {
-        console.log(`Error cargando imagen ${index}, intentando con URL alternativa...`);
-        // Intentar con la URL original sin timestamp
-        if (img.src !== url) {
-            img.src = url;
-        } else {
-            // Si sigue fallando, mostrar placeholder
-            img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='2' width='20' height='20' rx='2.18' ry='2.18'%3E%3C/rect%3E%3Cpath d='M8 2v20M16 2v20M2 8h20M2 16h20'%3E%3C/path%3E%3C/svg%3E";
-            img.style.objectFit = "contain";
-            img.style.backgroundColor = "#f0f0f0";
-            img.title = "No se pudo cargar la imagen";
-        }
-    };
-    
-    return img;
-}
-
-function guardar() {
-    const nombreInput = document.getElementById("nombre").value;
-    if (!nombreInput) {
-        alert("⚠️ Escribe tu nombre");
-        return;
-    }
-    localStorage.setItem("repartidor", nombreInput);
-    repartidor = nombreInput;
-    cargarPedidos();
+function cerrarSesion() {
+    localStorage.removeItem("repartidor_id");
+    localStorage.removeItem("repartidor_nombre");
+    localStorage.removeItem("repartidor_telefono");
+    localStorage.removeItem("repartidor_codigo");
+    window.location.href = "login-repartidor.html";
 }
 
 async function cargarPedidos() {
@@ -105,7 +55,9 @@ async function cargarPedidos() {
     }
 
     data.forEach(p => {
-        if (p.estado === "pendiente" || p.repartidor_id === repartidor) {
+        // Mostrar pedidos pendientes o asignados a este repartidor
+        if (p.estado === "pendiente" || p.repartidor_id === repartidorId) {
+
             const card = document.createElement("div");
             card.className = "card";
             
@@ -128,70 +80,46 @@ async function cargarPedidos() {
                 });
             }
 
-            // Crear contenedor de imágenes con método mejorado para iOS
-            const imagenesContainer = document.createElement("div");
-            imagenesContainer.className = "imagenes";
-            
+            let imagenesHtml = '';
             if (p.fotos && p.fotos.length > 0) {
-                const label = document.createElement("strong");
-                label.textContent = "📸 Fotos del pedido:";
-                imagenesContainer.appendChild(label);
-                
-                const gridContainer = document.createElement("div");
-                gridContainer.className = "imagenes-container";
-                gridContainer.style.display = "flex";
-                gridContainer.style.flexWrap = "wrap";
-                gridContainer.style.gap = "8px";
-                gridContainer.style.marginTop = "8px";
-                
-                // Agregar cada imagen con manejo especial para iOS
-                p.fotos.forEach((fotoUrl, idx) => {
-                    if (fotoUrl && fotoUrl.trim() !== "") {
-                        const img = crearImagenConFallback(fotoUrl, idx);
-                        gridContainer.appendChild(img);
-                    }
-                });
-                
-                imagenesContainer.appendChild(gridContainer);
-            } else {
-                const noFotos = document.createElement("small");
-                noFotos.textContent = "Sin fotos";
-                noFotos.style.color = "#999";
-                imagenesContainer.appendChild(noFotos);
+                imagenesHtml = `
+                    <div class="imagenes">
+                        <strong>📸 Fotos del pedido:</strong>
+                        <div class="imagenes-container">
+                            ${p.fotos.map(f => `<img src="${f}" onclick="verImagen('${f}')" loading="lazy">`).join("")}
+                        </div>
+                    </div>
+                `;
             }
 
-            // Construir el resto del HTML
-            const infoDiv = document.createElement("div");
-            infoDiv.innerHTML = `
+            card.innerHTML = `
                 <div class="pedido-header">
                     <strong>🆔 Pedido #${p.id}</strong>
                     <span class="pedido-fecha">📅 ${fechaFormateada}</span>
                 </div>
                 
-                <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion)}</p>
-                <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.recoleccion).replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+                <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
+                <button class="map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
 
-                <p><strong>📍 Entrega:</strong> ${escapeHtml(p.entrega)}</p>
-                <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.entrega).replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+                <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
+                <button class="map-btn" onclick="abrirMaps('${p.entrega.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
 
-                <p><strong>👤 Envía:</strong> ${escapeHtml(p.remitente)}</p>
-                <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_remitente) || "No disponible"}</p>
-                <a href="tel:${escapeHtml(p.tel_remitente)}" class="btn-call">📞 Llamar al remitente</a>
+                <p><strong>👤 Envía:</strong> ${p.remitente}</p>
+                <p><strong>📞 Tel:</strong> ${p.tel_remitente || "No disponible"}</p>
+                <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar al remitente</a>
 
-                <p><strong>👤 Recibe:</strong> ${escapeHtml(p.destinatario)}</p>
-                <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_destinatario) || "No disponible"}</p>
-                <a href="tel:${escapeHtml(p.tel_destinatario)}" class="btn-call">📞 Llamar al destinatario</a>
+                <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
+                <p><strong>📞 Tel:</strong> ${p.tel_destinatario || "No disponible"}</p>
+                <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar al destinatario</a>
 
-                <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion)}</p>
+                <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
                 <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
                 <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
                 <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
+                ${p.repartidor_nombre ? `<p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre} (${p.repartidor_telefono})</p>` : ''}
+                ${imagenesHtml}
             `;
-            
-            card.appendChild(infoDiv);
-            card.appendChild(imagenesContainer);
 
-            // Botones de acción
             const btnContainer = document.createElement("div");
             btnContainer.className = "botones-accion";
 
@@ -202,7 +130,7 @@ async function cargarPedidos() {
                 btnContainer.appendChild(btnAceptar);
             }
 
-            if (p.repartidor_id === repartidor && p.estado === "asignado") {
+            if (p.repartidor_id === repartidorId && p.estado === "asignado") {
                 const btnEnCamino = document.createElement("button");
                 btnEnCamino.textContent = "🚚 En camino";
                 btnEnCamino.onclick = () => cambiarEstado(p.id, "en camino");
@@ -217,7 +145,7 @@ async function cargarPedidos() {
                 btnContainer.appendChild(btnEntregado);
             }
 
-            if (p.repartidor_id === repartidor && p.estado === "en camino") {
+            if (p.repartidor_id === repartidorId && p.estado === "en camino") {
                 const btnEntregado = document.createElement("button");
                 btnEntregado.textContent = "✅ Marcar como entregado";
                 btnEntregado.onclick = () => cambiarEstado(p.id, "entregado");
@@ -234,20 +162,10 @@ async function cargarPedidos() {
     });
 }
 
-// Función para escapar HTML y prevenir XSS
-function escapeHtml(str) {
-    if (!str) return "";
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 async function aceptarPedido(id) {
-    if (!repartidor) {
-        alert("⚠️ Guarda tu nombre primero");
+    if (!repartidorId) {
+        alert("⚠️ Error de sesión. Inicia sesión nuevamente.");
+        window.location.href = "login-repartidor.html";
         return;
     }
 
@@ -257,12 +175,66 @@ async function aceptarPedido(id) {
     btn.disabled = true;
 
     try {
-        await supabaseClient
+        // Actualizar pedido con datos del repartidor
+        const { error } = await supabaseClient
             .from("pedidos")
-            .update({ estado: "asignado", repartidor_id: repartidor })
+            .update({ 
+                estado: "asignado", 
+                repartidor_id: repartidorId,
+                repartidor_nombre: repartidorNombre,
+                repartidor_telefono: repartidorTelefono
+            })
             .eq("id", id);
+        
+        if (error) throw error;
+        
+        // Obtener datos del pedido para enviar WhatsApp
+        const { data: pedido } = await supabaseClient
+            .from("pedidos")
+            .select("*")
+            .eq("id", id)
+            .single();
+        
+        if (pedido) {
+            // Enviar WhatsApp al cliente
+            const mensajeCliente = `🚚 *ACTUALIZACIÓN DE PEDIDO* 🚚
+
+✅ Tu pedido ha sido aceptado por un repartidor.
+
+🛵 *Repartidor asignado:*
+👤 Nombre: ${repartidorNombre}
+📞 Teléfono: ${repartidorTelefono}
+
+📍 Recolección: ${pedido.recoleccion}
+📍 Entrega: ${pedido.entrega}
+🆔 Pedido #${pedido.id}
+
+El repartidor se pondrá en contacto contigo pronto.`;
+
+            const urlCliente = `https://wa.me/${pedido.tel_remitente}?text=${encodeURIComponent(mensajeCliente)}`;
+            window.open(urlCliente, '_blank');
+            
+            // Enviar WhatsApp al admin
+            const mensajeAdmin = `🛵 *PEDIDO ASIGNADO* 🛵
+
+🆔 Pedido #${pedido.id}
+👤 Cliente: ${pedido.remitente} (${pedido.tel_remitente})
+
+🛵 Repartidor:
+👤 ${repartidorNombre}
+📞 ${repartidorTelefono}
+
+📍 Recolección: ${pedido.recoleccion}
+📍 Entrega: ${pedido.entrega}`;
+
+            const urlAdmin = `https://wa.me/5213111063251?text=${encodeURIComponent(mensajeAdmin)}`;
+            window.open(urlAdmin, '_blank');
+        }
+        
         cargarPedidos();
+        
     } catch (error) {
+        console.error("Error:", error);
         alert("❌ Error al aceptar pedido");
         btn.textContent = textoOriginal;
         btn.disabled = false;
@@ -280,6 +252,30 @@ async function cambiarEstado(id, nuevoEstado) {
             .from("pedidos")
             .update({ estado: nuevoEstado })
             .eq("id", id);
+        
+        // Si es entregado, notificar al cliente
+        if (nuevoEstado === "entregado") {
+            const { data: pedido } = await supabaseClient
+                .from("pedidos")
+                .select("*")
+                .eq("id", id)
+                .single();
+            
+            if (pedido) {
+                const mensaje = `✅ *PEDIDO ENTREGADO* ✅
+
+🆔 Pedido #${pedido.id}
+📦 Descripción: ${pedido.descripcion}
+
+Tu pedido ha sido entregado exitosamente.
+
+¡Gracias por usar Mandaditos Express! 🛵`;
+                
+                const url = `https://wa.me/${pedido.tel_remitente}?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
+            }
+        }
+        
         cargarPedidos();
     } catch (error) {
         alert("❌ Error al actualizar estado");
@@ -293,6 +289,10 @@ function abrirMaps(direccion) {
     window.open(url, "_blank");
 }
 
+function verImagen(url) {
+    window.open(url, "_blank");
+}
+
 // Escuchar cambios en tiempo real
 supabaseClient
     .channel("pedidos")
@@ -302,14 +302,5 @@ supabaseClient
     )
     .subscribe();
 
-// Mostrar mensaje si es iOS
-if (isIOS) {
-    console.log("📱 Detectado iPhone/iOS - Aplicando optimizaciones para imágenes");
-}
-
-// Cargar al inicio
-if (repartidor) {
-    cargarPedidos();
-} else {
-    contenedor.innerHTML = '<div style="text-align:center; padding:20px;">👋 Ingresa tu nombre para comenzar</div>';
-}
+// Cargar pedidos
+cargarPedidos();
