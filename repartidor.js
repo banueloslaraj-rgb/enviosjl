@@ -4,7 +4,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const contenedor = document.getElementById("pedidos");
-
 let repartidor = localStorage.getItem("repartidor") || "";
 
 // Cargar nombre guardado
@@ -16,13 +15,12 @@ function guardar() {
   const nombreInput = document.getElementById("nombre").value;
 
   if (!nombreInput) {
-    alert("Escribe tu nombre");
+    alert("⚠️ Escribe tu nombre");
     return;
   }
 
   localStorage.setItem("repartidor", nombreInput);
   repartidor = nombreInput;
-
   cargarPedidos();
 }
 
@@ -32,10 +30,10 @@ async function cargarPedidos() {
   const { data, error } = await supabaseClient
     .from("pedidos")
     .select("*")
-    .order("fecha", { ascending: false }); // 🔥 MÁS RECIENTES PRIMERO
+    .order("fecha", { ascending: false });
 
   if (error) {
-    contenedor.innerHTML = '<div style="color:red;">❌ Error al cargar pedidos</div>';
+    contenedor.innerHTML = '<div style="color:red; text-align:center;">❌ Error al cargar pedidos</div>';
     return;
   }
 
@@ -47,13 +45,13 @@ async function cargarPedidos() {
   }
 
   data.forEach(p => {
-    // Mostrar solo pedidos pendientes o los asignados a este repartidor
+    // Mostrar solo pedidos pendientes o asignados a este repartidor
     if (p.estado === "pendiente" || p.repartidor_id === repartidor) {
 
       const card = document.createElement("div");
       card.className = "card";
       
-      // Añadir clase según estado para colorear
+      // Añadir clase según estado
       if (p.estado === "pendiente") {
         card.classList.add("estado-pendiente");
       } else if (p.estado === "asignado") {
@@ -62,7 +60,7 @@ async function cargarPedidos() {
         card.classList.add("estado-entregado");
       }
 
-      // Formatear fecha si existe
+      // Formatear fecha
       let fechaFormateada = "Sin fecha";
       if (p.fecha) {
         const fechaObj = new Date(p.fecha);
@@ -74,11 +72,25 @@ async function cargarPedidos() {
         });
       }
 
+      // Generar HTML de imágenes
+      let imagenesHtml = '';
+      if (p.fotos && p.fotos.length > 0) {
+        imagenesHtml = `
+          <div class="imagenes">
+            <strong>📸 Fotos del pedido:</strong>
+            <div class="imagenes-container">
+              ${p.fotos.map(f => `<img src="${f}" onclick="verImagen('${f}')" loading="lazy">`).join("")}
+            </div>
+          </div>
+        `;
+      }
+
       card.innerHTML = `
         <div class="pedido-header">
           <strong>🆔 Pedido #${p.id}</strong>
           <span class="pedido-fecha">📅 ${fechaFormateada}</span>
         </div>
+        
         <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
         <button class="map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
 
@@ -97,27 +109,18 @@ async function cargarPedidos() {
         <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
         <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
         <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
-
-        <div class="imagenes">
-          ${(p.fotos || []).length > 0 ? 
-            (p.fotos || []).map(f => `<img src="${f}" onclick="verImagen('${f}')" />`).join("") : 
-            "<small>Sin fotos</small>"}
-        </div>
+        
+        ${imagenesHtml}
       `;
 
-      // Botones según estado
+      // Botones de acción
       const btnContainer = document.createElement("div");
-      btnContainer.style.marginTop = "10px";
-      btnContainer.style.display = "flex";
-      btnContainer.style.gap = "10px";
-      btnContainer.style.flexWrap = "wrap";
+      btnContainer.className = "botones-accion";
 
       if (p.estado === "pendiente") {
         const btnAceptar = document.createElement("button");
         btnAceptar.textContent = "✅ Aceptar pedido";
         btnAceptar.onclick = () => aceptarPedido(p.id);
-        btnAceptar.style.background = "#28a745";
-        btnAceptar.style.flex = "1";
         btnContainer.appendChild(btnAceptar);
       }
 
@@ -126,13 +129,11 @@ async function cargarPedidos() {
         btnEnCamino.textContent = "🚚 En camino";
         btnEnCamino.onclick = () => cambiarEstado(p.id, "en camino");
         btnEnCamino.style.background = "#17a2b8";
-        btnEnCamino.style.flex = "1";
         
         const btnEntregado = document.createElement("button");
         btnEntregado.textContent = "✅ Entregado";
         btnEntregado.onclick = () => cambiarEstado(p.id, "entregado");
         btnEntregado.style.background = "#6c757d";
-        btnEntregado.style.flex = "1";
         
         btnContainer.appendChild(btnEnCamino);
         btnContainer.appendChild(btnEntregado);
@@ -143,11 +144,13 @@ async function cargarPedidos() {
         btnEntregado.textContent = "✅ Marcar como entregado";
         btnEntregado.onclick = () => cambiarEstado(p.id, "entregado");
         btnEntregado.style.background = "#28a745";
-        btnEntregado.style.flex = "1";
         btnContainer.appendChild(btnEntregado);
       }
 
-      card.appendChild(btnContainer);
+      if (btnContainer.children.length > 0) {
+        card.appendChild(btnContainer);
+      }
+
       contenedor.appendChild(card);
     }
   });
@@ -169,10 +172,9 @@ async function aceptarPedido(id) {
       .from("pedidos")
       .update({ estado: "asignado", repartidor_id: repartidor })
       .eq("id", id);
-
     cargarPedidos();
   } catch (error) {
-    alert("Error al aceptar pedido");
+    alert("❌ Error al aceptar pedido");
     btn.textContent = textoOriginal;
     btn.disabled = false;
   }
@@ -189,10 +191,9 @@ async function cambiarEstado(id, nuevoEstado) {
       .from("pedidos")
       .update({ estado: nuevoEstado })
       .eq("id", id);
-
     cargarPedidos();
   } catch (error) {
-    alert("Error al actualizar estado");
+    alert("❌ Error al actualizar estado");
     btn.textContent = textoOriginal;
     btn.disabled = false;
   }
@@ -212,25 +213,13 @@ supabaseClient
   .channel("pedidos")
   .on("postgres_changes",
     { event: "*", schema: "public", table: "pedidos" },
-    (payload) => {
-      const notif = document.createElement("div");
-      notif.textContent = "📦 ¡Actualización de pedidos!";
-      notif.style.position = "fixed";
-      notif.style.bottom = "80px";
-      notif.style.right = "20px";
-      notif.style.background = "#28a745";
-      notif.style.color = "white";
-      notif.style.padding = "10px 15px";
-      notif.style.borderRadius = "10px";
-      notif.style.zIndex = "1000";
-      notif.style.animation = "pulse 0.5s ease";
-      document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 3000);
-      
-      cargarPedidos();
-    }
+    () => cargarPedidos()
   )
   .subscribe();
 
 // Cargar al inicio
-cargarPedidos();
+if (repartidor) {
+  cargarPedidos();
+} else {
+  contenedor.innerHTML = '<div style="text-align:center; padding:20px;">👋 Ingresa tu nombre para comenzar</div>';
+}
