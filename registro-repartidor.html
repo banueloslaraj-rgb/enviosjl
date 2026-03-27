@@ -5,199 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Registro Repartidor - Mandaditos Express</title>
     <link rel="stylesheet" href="registro-repartidor.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="app">
-    <!-- Header con gradiente -->
-    <div class="hero-section">
-        <div class="hero-content">
-            <div class="hero-icon">🛵</div>
-            <h1>Mandaditos Express</h1>
-            <p>Únete a nuestro equipo de repartidores</p>
-            <a href="index.html" class="btn-volver">
-                ← Volver al inicio
-            </a>
-        </div>
-    </div>
+    <header>
+        <h1>🛵 Mandaditos Express</h1>
+        <p>Registro de repartidores</p>
+        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    </header>
 
-    <form id="registroForm" class="form-container">
-        <!-- Progreso del registro -->
-        <div class="progress-steps">
-            <div class="step active">
-                <div class="step-number">1</div>
-                <div class="step-label">Datos personales</div>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-label">Documentos</div>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-label">Vehículo</div>
-            </div>
-        </div>
+    <form id="registroForm" class="card">
 
-        <!-- Sección 1: Datos personales -->
-        <div class="form-section">
-            <div class="section-header">
-                <div class="section-icon">👤</div>
-                <h2>Datos personales</h2>
-                <p>Información básica para contactarte</p>
-            </div>
-
-            <div class="input-group">
-                <label class="input-label">
-                    <span class="label-icon">👤</span>
-                    Nombre completo
-                    <span class="required">*</span>
-                </label>
-                <input type="text" id="nombreCompleto" placeholder="Ej: Juan Pérez González" required>
-                <div class="input-hint">Ingresa tu nombre tal como aparece en tu identificación</div>
-            </div>
-
-            <div class="input-group">
-                <label class="input-label">
-                    <span class="label-icon">📞</span>
-                    Teléfono
-                    <span class="required">*</span>
-                </label>
-                <input type="tel" id="telefono" placeholder="10 dígitos, ej: 3111234567" required pattern="[0-9]{10}">
-                <div class="input-hint">Número de WhatsApp para recibir notificaciones</div>
-            </div>
-
-            <div class="input-group">
-                <label class="input-label">
-                    <span class="label-icon">✉️</span>
-                    Correo electrónico
-                    <span class="optional">Opcional</span>
-                </label>
-                <input type="email" id="email" placeholder="tucorreo@ejemplo.com">
-                <div class="input-hint">Para enviarte información importante</div>
-            </div>
-        </div>
-
-        <!-- Sección 2: Documentos -->
-        <div class="form-section">
-            <div class="section-header">
-                <div class="section-icon">📄</div>
-                <h2>Documentos requeridos</h2>
-                <p>Sube documentos oficiales para tu registro</p>
-            </div>
-
-            <div class="docs-grid">
-                <div class="doc-card">
-                    <div class="doc-icon">🪪</div>
-                    <div class="doc-title">Credencial de elector</div>
-                    <div class="doc-subtitle">Frente</div>
-                    <label class="file-upload">
-                        <input type="file" id="credencialFrente" accept="image/*" required>
-                        <div class="file-upload-btn">📸 Seleccionar archivo</div>
-                        <div class="file-name" id="credencialFrenteName"></div>
-                    </label>
-                </div>
-
-                <div class="doc-card">
-                    <div class="doc-icon">🪪</div>
-                    <div class="doc-title">Credencial de elector</div>
-                    <div class="doc-subtitle">Reverso</div>
-                    <label class="file-upload">
-                        <input type="file" id="credencialReverso" accept="image/*" required>
-                        <div class="file-upload-btn">📸 Seleccionar archivo</div>
-                        <div class="file-name" id="credencialReversoName"></div>
-                    </label>
-                </div>
-
-                <div class="doc-card">
-                    <div class="doc-icon">🏠</div>
-                    <div class="doc-title">Comprobante de domicilio</div>
-                    <div class="doc-subtitle">Agua, luz, teléfono o predial</div>
-                    <label class="file-upload">
-                        <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
-                        <div class="file-upload-btn">📄 Seleccionar archivo</div>
-                        <div class="file-name" id="comprobanteDomicilioName"></div>
-                    </label>
-                </div>
-
-                <div class="doc-card optional-card">
-                    <div class="doc-icon">🚗</div>
-                    <div class="doc-title">Licencia de conducir</div>
-                    <div class="doc-subtitle">Opcional</div>
-                    <label class="file-upload">
-                        <input type="file" id="licencia" accept="image/*">
-                        <div class="file-upload-btn">🚗 Seleccionar archivo</div>
-                        <div class="file-name" id="licenciaName"></div>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sección 3: Datos del vehículo -->
-        <div class="form-section">
-            <div class="section-header">
-                <div class="section-icon">🚘</div>
-                <h2>Datos del vehículo</h2>
-                <p>Información de tu medio de transporte</p>
-            </div>
-
-            <div class="vehicle-grid">
-                <div class="input-group">
-                    <label class="input-label">
-                        <span class="label-icon">🚘</span>
-                        Marca y modelo
-                        <span class="required">*</span>
-                    </label>
-                    <input type="text" id="marcaVehiculo" placeholder="Ej: Honda Cargo 150" required>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">
-                        <span class="label-icon">🎨</span>
-                        Color del vehículo
-                        <span class="required">*</span>
-                    </label>
-                    <input type="text" id="colorVehiculo" placeholder="Ej: Rojo, Azul, Negro" required>
-                </div>
-
-                <div class="doc-card full-width">
-                    <div class="doc-icon">📸</div>
-                    <div class="doc-title">Foto del vehículo</div>
-                    <div class="doc-subtitle">Muestra tu vehículo completo</div>
-                    <label class="file-upload">
-                        <input type="file" id="fotoVehiculo" accept="image/*" required>
-                        <div class="file-upload-btn">📷 Tomar foto / Subir</div>
-                        <div class="file-name" id="fotoVehiculoName"></div>
-                    </label>
-                </div>
-
-                <div class="doc-card full-width">
-                    <div class="doc-icon">🔢</div>
-                    <div class="doc-title">Foto de placas</div>
-                    <div class="doc-subtitle">Placas del vehículo visibles</div>
-                    <label class="file-upload">
-                        <input type="file" id="fotoPlacas" accept="image/*" required>
-                        <div class="file-upload-btn">📸 Subir foto</div>
-                        <div class="file-name" id="fotoPlacasName"></div>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botón de registro mejorado -->
-        <div class="form-actions">
-            <button type="submit" class="btn-submit">
-                <span class="btn-icon">✅</span>
-                Registrar como repartidor
-                <span class="btn-arrow">→</span>
-            </button>
-            <p class="terms-text">
-                Al registrarte aceptas nuestros <a href="#">términos y condiciones</a> y 
-                <a href="#">políticas de privacidad</a>
-            </p>
-        </div>
+        <h2>📋 Datos personales</h2>
+        
+        <input type="text" id="nombreCompleto" placeholder="👤 Nombre completo" required>
+        <input type="tel" id="telefono" placeholder="📞 Teléfono (10 dígitos)" required pattern="[0-9]{10}">
+        <input type="email" id="email" placeholder="✉️ Correo electrónico (opcional)">
+        
+        <h2>📄 Documentos</h2>
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Frente)
+            <input type="file" id="credencialFrente" accept="image/*" required>
+            <span class="file-name" id="credencialFrenteName"></span>
+        </label>
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Reverso)
+            <input type="file" id="credencialReverso" accept="image/*" required>
+            <span class="file-name" id="credencialReversoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🏠 Comprobante de domicilio
+            <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
+            <span class="file-name" id="comprobanteDomicilioName"></span>
+        </label>
+        
+        <label class="file-label">
+            🚗 Licencia de conducir (Opcional)
+            <input type="file" id="licencia" accept="image/*">
+            <span class="file-name" id="licenciaName"></span>
+        </label>
+        
+        <h2>🚗 Datos del vehículo</h2>
+        
+        <input type="text" id="marcaVehiculo" placeholder="🚘 Marca y modelo" required>
+        <input type="text" id="colorVehiculo" placeholder="🎨 Color del vehículo" required>
+        
+        <label class="file-label">
+            📸 Foto del vehículo
+            <input type="file" id="fotoVehiculo" accept="image/*" required>
+            <span class="file-name" id="fotoVehiculoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🔢 Foto de placas
+            <input type="file" id="fotoPlacas" accept="image/*" required>
+            <span class="file-name" id="fotoPlacasName"></span>
+        </label>
+        
+        <button type="submit">📝 Registrar como repartidor</button>
     </form>
-
+    
     <div id="mensaje" class="mensaje"></div>
 </div>
 
