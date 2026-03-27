@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Registro Repartidor - Mandaditos Express</title>
+    <link rel="stylesheet" href="registro-repartidor.css">
+</head>
+<body>
+
+<div class="app">
+    <header>
+        <h1>🛵 Mandaditos Express</h1>
+        <p>Registro de repartidores</p>
+        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    </header>
+
+    <form id="registroForm" class="card">
+        <h2>📋 Datos personales</h2>
+        
+        <input type="text" id="nombreCompleto" placeholder="👤 Nombre completo" required>
+        <input type="tel" id="telefono" placeholder="📞 Teléfono (10 dígitos)" required pattern="[0-9]{10}">
+        <input type="email" id="email" placeholder="✉️ Correo electrónico (opcional)">
+        
+        <h2>📄 Documentos</h2>
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Frente)
+            <input type="file" id="credencialFrente" accept="image/*" required>
+            <span class="file-name" id="credencialFrenteName"></span>
+        </label>
+        
+        <label class="file-label">
+            🪪 Credencial de elector (Reverso)
+            <input type="file" id="credencialReverso" accept="image/*" required>
+            <span class="file-name" id="credencialReversoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🏠 Comprobante de domicilio
+            <input type="file" id="comprobanteDomicilio" accept="image/*,application/pdf" required>
+            <span class="file-name" id="comprobanteDomicilioName"></span>
+        </label>
+        
+        <label class="file-label">
+            🚗 Licencia de conducir (Opcional)
+            <input type="file" id="licencia" accept="image/*">
+            <span class="file-name" id="licenciaName"></span>
+        </label>
+        
+        <h2>🚗 Datos del vehículo</h2>
+        
+        <input type="text" id="marcaVehiculo" placeholder="🚘 Marca y modelo" required>
+        <input type="text" id="colorVehiculo" placeholder="🎨 Color del vehículo" required>
+        
+        <label class="file-label">
+            📸 Foto del vehículo
+            <input type="file" id="fotoVehiculo" accept="image/*" required>
+            <span class="file-name" id="fotoVehiculoName"></span>
+        </label>
+        
+        <label class="file-label">
+            🔢 Foto de placas
+            <input type="file" id="fotoPlacas" accept="image/*" required>
+            <span class="file-name" id="fotoPlacasName"></span>
+        </label>
+        
+        <button type="submit">📝 Registrar como repartidor</button>
+    </form>
+    
+    <div id="mensaje" class="mensaje"></div>
+</div>
+
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="registro-repartidor.js"></script>
+</body>
+</html>

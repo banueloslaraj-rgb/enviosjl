@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Login Repartidor - Mandaditos Express</title>
+    <link rel="stylesheet" href="login-repartidor.css">
+</head>
+<body>
+
+<div class="app">
+    <header>
+        <h1>🛵 Mandaditos Express</h1>
+        <p>Acceso repartidores</p>
+        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    </header>
+
+    <div class="card">
+        <h2>🔑 Iniciar sesión</h2>
+        
+        <input type="text" id="codigo" placeholder="🔢 Código de acceso" maxlength="6" autocomplete="off">
+        
+        <button id="loginBtn">Ingresar</button>
+        
+        <div class="info-text">
+            <p>⚠️ ¿No tienes código? <a href="registro-repartidor.html">Regístrate aquí</a></p>
+            <p>📝 Tu código te fue proporcionado al registrarte</p>
+        </div>
+    </div>
+    
+    <div id="mensaje" class="mensaje"></div>
+</div>
+
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="login-repartidor.js"></script>
+</body>
+</html>
