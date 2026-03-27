@@ -35,6 +35,12 @@
       color: white;
       border: none;
     }
+
+    #msg {
+      margin-top: 10px;
+      font-size: 14px;
+      color: red;
+    }
   </style>
 </head>
 
@@ -62,16 +68,25 @@ const supabase = supabase.createClient(
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+  const msg = document.getElementById("msg");
 
-  const { error } = await supabase.auth.signInWithPassword({
+  msg.textContent = "Ingresando...";
+
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
 
   if (error) {
-    document.getElementById("msg").textContent = "Error ❌";
+    console.error(error);
+    msg.textContent = error.message; // 🔥 ahora verás el error real
   } else {
-    window.location.href = "admin.html";
+    msg.style.color = "green";
+    msg.textContent = "Login correcto ✅";
+
+    setTimeout(() => {
+      window.location.href = "admin.html";
+    }, 1000);
   }
 }
 </script>
