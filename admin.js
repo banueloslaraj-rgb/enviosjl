@@ -9,7 +9,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Elementos del DOM - IDs CORRECTOS
+// Elementos del DOM
 const contenedorPedidos = document.getElementById("pedidos");
 const contenedorRepartidores = document.getElementById("repartidores");
 
@@ -46,7 +46,7 @@ function getEstadoBadge(estado) {
     return badges[estado] || `<span class="estado-badge">${estado}</span>`;
 }
 
-// 🔒 Escapar HTML para prevenir XSS
+// 🔒 Escapar HTML
 function escapeHtml(str) {
     if (!str) return "";
     return String(str)
@@ -57,16 +57,72 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
+// 🔄 ACTUALIZAR ESTADO DE PEDIDO - VERSIÓN SIMPLIFICADA
+async function actualizarEstadoPedido(id) {
+    console.log("🔴 FUNCIÓN LLAMADA - ID:", id);
+    
+    // Obtener el select
+    const selectElement = document.getElementById(`estado-${id}`);
+    if (!selectElement) {
+        console.error("❌ No se encontró el select para ID:", id);
+        alert("Error: No se encontró el selector");
+        return;
+    }
+    
+    const nuevoEstado = selectElement.value;
+    console.log("📊 Nuevo estado:", nuevoEstado);
+    
+    // Buscar el botón que está siendo clickeado
+    const btn = document.querySelector(`button[onclick*="actualizarEstadoPedido(${id}"]`);
+    if (!btn) {
+        console.error("❌ No se encontró el botón");
+        alert("Error: No se encontró el botón");
+        return;
+    }
+    
+    const textoOriginal = btn.innerText;
+    btn.innerText = "⏳ Actualizando...";
+    btn.disabled = true;
+    
+    try {
+        // Actualizar en Supabase
+        const { data, error } = await supabaseClient
+            .from("pedidos")
+            .update({ estado: nuevoEstado })
+            .eq("id", id)
+            .select();
+        
+        if (error) {
+            console.error("❌ Error de Supabase:", error);
+            throw new Error(error.message);
+        }
+        
+        console.log("✅ Estado actualizado correctamente:", data);
+        
+        // Mostrar mensaje de éxito
+        btn.innerText = "✅ Actualizado!";
+        
+        // Recargar la lista de pedidos
+        setTimeout(() => {
+            cargarPedidos();
+        }, 1000);
+        
+    } catch (error) {
+        console.error("❌ Error:", error);
+        alert("Error al actualizar: " + error.message);
+        btn.innerText = textoOriginal;
+        btn.disabled = false;
+    }
+}
+
 // 📦 Cargar pedidos
 async function cargarPedidos() {
     if (!contenedorPedidos) {
-        console.error("❌ Contenedor de pedidos no encontrado");
+        console.error("Contenedor no encontrado");
         return;
     }
     
     contenedorPedidos.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
-    
-    console.log("=== CARGANDO PEDIDOS ===");
     
     try {
         const { data, error } = await supabaseClient
@@ -74,12 +130,8 @@ async function cargarPedidos() {
             .select("*")
             .order("fecha", { ascending: false });
         
-        console.log("📦 Datos recibidos:", data);
-        console.log("📊 Cantidad de pedidos:", data?.length);
-        console.log("⚠️ Error:", error);
-        
         if (error) {
-            console.error("❌ Error en consulta:", error);
+            console.error("Error:", error);
             contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
             return;
         }
@@ -89,15 +141,13 @@ async function cargarPedidos() {
             return;
         }
         
-        // Actualizar estadísticas
-        actualizarContadorPedidos(data.length);
+        // Actualizar contador
+        const statNumber = document.querySelector('.stat-card:first-child .stat-number');
+        if (statNumber) statNumber.textContent = data.length;
         
-        console.log(`✅ Mostrando ${data.length} pedidos`);
         contenedorPedidos.innerHTML = "";
         
-        data.forEach((p, index) => {
-            console.log(`🎨 Renderizando pedido ${index + 1}: ID ${p.id}`);
-            
+        data.forEach(p => {
             const card = document.createElement("div");
             card.className = `card ${getEstadoClass(p.estado)}`;
             
@@ -115,12 +165,10 @@ async function cargarPedidos() {
                             minute: '2-digit'
                         });
                     }
-                } catch (e) {
-                    console.error("Error formateando fecha:", e);
-                }
+                } catch (e) {}
             }
             
-            // Formatear imágenes
+            // Imágenes
             let imagenesHtml = '';
             if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
                 imagenesHtml = `
@@ -166,7 +214,7 @@ async function cargarPedidos() {
                     <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoPedido(${p.id}, event)" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoPedido(${p.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
                 
                 ${imagenesHtml}
             `;
@@ -175,98 +223,8 @@ async function cargarPedidos() {
         });
         
     } catch (error) {
-        console.error("❌ Error fatal en cargarPedidos:", error);
+        console.error("Error:", error);
         contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
-    }
-}
-
-// 🔄 Actualizar estado de pedido - VERSIÓN CORREGIDA CON EVENT
-async function actualizarEstadoPedido(id, event) {
-    console.log("🔄 Actualizando estado del pedido:", id);
-    
-    const selectElement = document.getElementById(`estado-${id}`);
-    if (!selectElement) {
-        console.error("❌ No se encontró el select para el pedido:", id);
-        alert("Error: No se encontró el selector de estado");
-        return;
-    }
-    
-    const nuevoEstado = selectElement.value;
-    console.log("📊 Nuevo estado seleccionado:", nuevoEstado);
-    
-    // Encontrar el botón que disparó el evento
-    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoPedido(${id}"]`);
-    if (!btn) {
-        console.error("❌ No se encontró el botón");
-        return;
-    }
-    
-    const textoOriginal = btn.textContent;
-    btn.textContent = "⏳ Actualizando...";
-    btn.disabled = true;
-    
-    try {
-        // Primero obtener el pedido actual para notificaciones
-        const { data: pedidoActual, error: getError } = await supabaseClient
-            .from("pedidos")
-            .select("*")
-            .eq("id", id)
-            .single();
-        
-        if (getError) {
-            console.error("Error obteniendo pedido:", getError);
-        }
-        
-        // Actualizar el estado
-        const { error: updateError } = await supabaseClient
-            .from("pedidos")
-            .update({ estado: nuevoEstado })
-            .eq("id", id);
-        
-        if (updateError) {
-            console.error("Error al actualizar:", updateError);
-            throw updateError;
-        }
-        
-        console.log("✅ Estado actualizado correctamente");
-        
-        // Cambiar texto del botón temporalmente
-        btn.textContent = "✅ Actualizado";
-        setTimeout(() => {
-            btn.textContent = textoOriginal;
-            btn.disabled = false;
-        }, 2000);
-        
-        // Recargar los pedidos para mostrar el cambio
-        setTimeout(() => {
-            cargarPedidos();
-        }, 500);
-        
-        // Notificar al cliente si el pedido fue entregado
-        if (nuevoEstado === "entregado" && pedidoActual && pedidoActual.tel_remitente) {
-            const mensaje = `✅ *PEDIDO ENTREGADO* ✅\n\n🆔 Pedido #${pedidoActual.id}\n📦 Descripción: ${pedidoActual.descripcion}\n\nTu pedido ha sido marcado como entregado.\n\n¡Gracias por usar Mandaditos Express! 🛵`;
-            window.open(`https://wa.me/${pedidoActual.tel_remitente}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-        
-        // Notificar al repartidor si el pedido fue asignado
-        if (nuevoEstado === "asignado" && pedidoActual && pedidoActual.repartidor_telefono) {
-            const mensaje = `🚚 *PEDIDO ASIGNADO* 🚚\n\n🆔 Pedido #${pedidoActual.id}\n📍 Recolección: ${pedidoActual.recoleccion}\n📍 Entrega: ${pedidoActual.entrega}\n\nPor favor confirma que recibiste el pedido.`;
-            window.open(`https://wa.me/${pedidoActual.repartidor_telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        }
-        
-    } catch (error) {
-        console.error("❌ Error al actualizar estado:", error);
-        alert(`❌ Error al actualizar estado: ${error.message || "Intenta de nuevo"}`);
-        btn.textContent = textoOriginal;
-        btn.disabled = false;
-    }
-}
-
-// Función para actualizar el contador de pedidos
-function actualizarContadorPedidos(total) {
-    const statNumber = document.querySelector('.stat-card:first-child .stat-number');
-    if (statNumber) {
-        statNumber.textContent = total;
     }
 }
 
@@ -282,8 +240,6 @@ async function cargarRepartidores() {
             .select("*")
             .order("fecha_registro", { ascending: false });
         
-        console.log("🛵 Repartidores cargados:", data);
-        
         if (error) {
             contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
             return;
@@ -294,9 +250,17 @@ async function cargarRepartidores() {
             return;
         }
         
-        // Actualizar estadísticas
+        // Actualizar contadores
         const activos = data.filter(r => r.estado === "activo").length;
-        actualizarContadorRepartidores(data.length, activos);
+        const statCards = document.querySelectorAll('.stat-card');
+        if (statCards.length >= 2) {
+            const repartidoresStat = statCards[1].querySelector('.stat-number');
+            if (repartidoresStat) repartidoresStat.textContent = data.length;
+        }
+        if (statCards.length >= 3) {
+            const activosStat = statCards[2].querySelector('.stat-number');
+            if (activosStat) activosStat.textContent = activos;
+        }
         
         contenedorRepartidores.innerHTML = "";
         
@@ -362,29 +326,29 @@ async function cargarRepartidores() {
                     <option value="rechazado" ${r.estado === "rechazado" ? "selected" : ""}>❌ Rechazado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoRepartidor(${r.id}, event)" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoRepartidor(${r.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
             `;
             
             contenedorRepartidores.appendChild(card);
         });
         
     } catch (error) {
-        console.error("Error cargando repartidores:", error);
+        console.error("Error:", error);
         contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
     }
 }
 
 // 🔄 Actualizar estado de repartidor
-async function actualizarEstadoRepartidor(id, event) {
+async function actualizarEstadoRepartidor(id) {
     const selectElement = document.getElementById(`estado-rep-${id}`);
     if (!selectElement) return;
     
     const estado = selectElement.value;
-    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoRepartidor(${id}"]`);
+    const btn = document.querySelector(`button[onclick*="actualizarEstadoRepartidor(${id}"]`);
     if (!btn) return;
     
-    const textoOriginal = btn.textContent;
-    btn.textContent = "⏳ Actualizando...";
+    const textoOriginal = btn.innerText;
+    btn.innerText = "⏳ Actualizando...";
     btn.disabled = true;
     
     try {
@@ -401,7 +365,7 @@ async function actualizarEstadoRepartidor(id, event) {
         
         if (error) throw error;
         
-        btn.textContent = "✅ Actualizado";
+        btn.innerText = "✅ Actualizado";
         
         if (estado === "activo" && repartidor && repartidor.telefono) {
             const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${window.location.origin}/login-repartidor.html\n\n¡Bienvenido al equipo! 🛵`;
@@ -414,27 +378,13 @@ async function actualizarEstadoRepartidor(id, event) {
         }
         
         setTimeout(() => {
-            btn.textContent = textoOriginal;
-            btn.disabled = false;
             cargarRepartidores();
-        }, 1500);
+        }, 1000);
         
     } catch (error) {
         alert("❌ Error al actualizar estado");
-        btn.textContent = textoOriginal;
+        btn.innerText = textoOriginal;
         btn.disabled = false;
-    }
-}
-
-function actualizarContadorRepartidores(total, activos) {
-    const statCards = document.querySelectorAll('.stat-card');
-    if (statCards.length >= 2) {
-        const repartidoresStat = statCards[1].querySelector('.stat-number');
-        if (repartidoresStat) repartidoresStat.textContent = total;
-    }
-    if (statCards.length >= 3) {
-        const activosStat = statCards[2].querySelector('.stat-number');
-        if (activosStat) activosStat.textContent = activos;
     }
 }
 
@@ -497,14 +447,12 @@ function abrirMaps(dir) {
 function cambiarPestaña(pestaña) {
     pestañaActiva = pestaña;
     
-    // Actualizar clases de los botones
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.remove("active");
     });
     const activeBtn = document.querySelector(`.tab-btn[data-tab="${pestaña}"]`);
     if (activeBtn) activeBtn.classList.add("active");
     
-    // Mostrar/ocultar contenedores
     if (contenedorPedidos) {
         contenedorPedidos.style.display = pestaña === "pedidos" ? "block" : "none";
     }
@@ -512,7 +460,6 @@ function cambiarPestaña(pestaña) {
         contenedorRepartidores.style.display = pestaña === "repartidores" ? "block" : "none";
     }
     
-    // Cargar datos según pestaña
     if (pestaña === "pedidos") {
         cargarPedidos();
     } else if (pestaña === "repartidores") {
@@ -540,15 +487,15 @@ function mostrarNotificacion(mensaje) {
 
 // 📊 Estadísticas rápidas
 async function cargarEstadisticas() {
-    const { data: pedidos, count: pedidosCount } = await supabaseClient
+    const { count: pedidosCount } = await supabaseClient
         .from("pedidos")
         .select("*", { count: 'exact', head: true });
     
-    const { data: repartidores, count: repartidoresCount } = await supabaseClient
+    const { count: repartidoresCount } = await supabaseClient
         .from("repartidores")
         .select("*", { count: 'exact', head: true });
     
-    const { data: repartidoresActivos, count: activosCount } = await supabaseClient
+    const { count: activosCount } = await supabaseClient
         .from("repartidores")
         .select("*", { count: 'exact', head: true })
         .eq("estado", "activo");
@@ -596,12 +543,9 @@ supabaseClient
     })
     .subscribe();
 
-// 🚀 Inicializar todo
+// 🚀 Inicializar
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🚀 Inicializando panel admin...");
-    console.log("📦 Contenedor pedidos:", contenedorPedidos);
-    console.log("🛵 Contenedor repartidores:", contenedorRepartidores);
-    
+    console.log("🚀 Panel admin iniciado");
     cargarEstadisticas();
     cargarPedidos();
 });
