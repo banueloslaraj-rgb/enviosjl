@@ -11,8 +11,19 @@
 <div class="container">
     <h1>📦 Panel de Administración</h1>
     
-    <!-- Los tabs se generan automáticamente con JavaScript -->
-    <!-- Los contenedores también se generan automáticamente -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="pedidos" onclick="cambiarPestaña('pedidos')">📦 Pedidos</button>
+        <button class="tab-btn" data-tab="repartidores" onclick="cambiarPestaña('repartidores')">🛵 Repartidores</button>
+        <button class="logout-btn" onclick="logout()">🚪 Cerrar sesión</button>
+    </div>
+    
+    <div id="pedidos" class="contenedor-pedidos">
+        <div class="loader">🔄 Cargando pedidos...</div>
+    </div>
+    
+    <div id="repartidores" class="contenedor-repartidores" style="display: none;">
+        <div class="loader">🔄 Cargando repartidores...</div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>

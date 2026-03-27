@@ -9,9 +9,9 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Elementos del DOM
-let contenedorPedidos = document.getElementById("pedidos");
-let contenedorRepartidores = document.getElementById("repartidores");
+// Elementos del DOM - IDs CORRECTOS
+const contenedorPedidos = document.getElementById("pedidos");
+const contenedorRepartidores = document.getElementById("repartidores");
 
 // Variable para controlar pestaña activa
 let pestañaActiva = "pedidos";
@@ -57,10 +57,10 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
-// 📦 Cargar pedidos ordenados por fecha (más recientes primero)
+// 📦 Cargar pedidos
 async function cargarPedidos() {
     if (!contenedorPedidos) {
-        console.error("Contenedor de pedidos no encontrado");
+        console.error("❌ Contenedor de pedidos no encontrado");
         return;
     }
     
@@ -74,11 +74,12 @@ async function cargarPedidos() {
             .select("*")
             .order("fecha", { ascending: false });
         
-        console.log("Datos recibidos:", data);
-        console.log("Error:", error);
+        console.log("📦 Datos recibidos:", data);
+        console.log("📊 Cantidad de pedidos:", data?.length);
+        console.log("⚠️ Error:", error);
         
         if (error) {
-            console.error("Error en consulta:", error);
+            console.error("❌ Error en consulta:", error);
             contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
             return;
         }
@@ -88,11 +89,14 @@ async function cargarPedidos() {
             return;
         }
         
+        // Actualizar estadísticas
+        actualizarContadorPedidos(data.length);
+        
         console.log(`✅ Mostrando ${data.length} pedidos`);
         contenedorPedidos.innerHTML = "";
         
         data.forEach((p, index) => {
-            console.log(`Renderizando pedido ${index + 1}:`, p.id);
+            console.log(`🎨 Renderizando pedido ${index + 1}: ID ${p.id}`);
             
             const card = document.createElement("div");
             card.className = `card ${getEstadoClass(p.estado)}`;
@@ -121,9 +125,9 @@ async function cargarPedidos() {
             if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
                 imagenesHtml = `
                     <div class="imagenes">
-                        <strong>📸 Fotos:</strong><br>
+                        <strong>📸 Fotos:</strong>
                         <div class="imagenes-container">
-                            ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy" style="width:80px; margin:5px; border-radius:8px; cursor:pointer;">`).join("")}
+                            ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy">`).join("")}
                         </div>
                     </div>
                 `;
@@ -171,8 +175,16 @@ async function cargarPedidos() {
         });
         
     } catch (error) {
-        console.error("Error fatal en cargarPedidos:", error);
+        console.error("❌ Error fatal en cargarPedidos:", error);
         contenedorPedidos.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+    }
+}
+
+// Función para actualizar el contador de pedidos
+function actualizarContadorPedidos(total) {
+    const statNumber = document.querySelector('.stat-card:first-child .stat-number');
+    if (statNumber) {
+        statNumber.textContent = total;
     }
 }
 
@@ -188,7 +200,7 @@ async function cargarRepartidores() {
             .select("*")
             .order("fecha_registro", { ascending: false });
         
-        console.log("Repartidores cargados:", data);
+        console.log("🛵 Repartidores cargados:", data);
         
         if (error) {
             contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
@@ -199,6 +211,10 @@ async function cargarRepartidores() {
             contenedorRepartidores.innerHTML = '<div class="empty-message">📭 No hay repartidores registrados</div>';
             return;
         }
+        
+        // Actualizar estadísticas
+        const activos = data.filter(r => r.estado === "activo").length;
+        actualizarContadorRepartidores(data.length, activos);
         
         contenedorRepartidores.innerHTML = "";
         
@@ -273,6 +289,18 @@ async function cargarRepartidores() {
     } catch (error) {
         console.error("Error cargando repartidores:", error);
         contenedorRepartidores.innerHTML = `<div class="error-message">❌ Error: ${error.message}</div>`;
+    }
+}
+
+function actualizarContadorRepartidores(total, activos) {
+    const statCards = document.querySelectorAll('.stat-card');
+    if (statCards.length >= 2) {
+        const repartidoresStat = statCards[1].querySelector('.stat-number');
+        if (repartidoresStat) repartidoresStat.textContent = total;
+    }
+    if (statCards.length >= 3) {
+        const activosStat = statCards[2].querySelector('.stat-number');
+        if (activosStat) activosStat.textContent = activos;
     }
 }
 
@@ -422,12 +450,14 @@ function abrirMaps(dir) {
 function cambiarPestaña(pestaña) {
     pestañaActiva = pestaña;
     
+    // Actualizar clases de los botones
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.remove("active");
     });
     const activeBtn = document.querySelector(`.tab-btn[data-tab="${pestaña}"]`);
     if (activeBtn) activeBtn.classList.add("active");
     
+    // Mostrar/ocultar contenedores
     if (contenedorPedidos) {
         contenedorPedidos.style.display = pestaña === "pedidos" ? "block" : "none";
     }
@@ -435,6 +465,7 @@ function cambiarPestaña(pestaña) {
         contenedorRepartidores.style.display = pestaña === "repartidores" ? "block" : "none";
     }
     
+    // Cargar datos según pestaña
     if (pestaña === "pedidos") {
         cargarPedidos();
     } else if (pestaña === "repartidores") {
@@ -511,34 +542,9 @@ supabaseClient
 
 // 🚀 Inicializar todo
 document.addEventListener("DOMContentLoaded", () => {
-    const container = document.querySelector(".container");
-    
-    if (container && !document.querySelector(".tabs")) {
-        const tabsHtml = `
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="pedidos" onclick="cambiarPestaña('pedidos')">📦 Pedidos</button>
-                <button class="tab-btn" data-tab="repartidores" onclick="cambiarPestaña('repartidores')">🛵 Repartidores</button>
-                <button class="logout-btn" onclick="logout()">🚪 Cerrar sesión</button>
-            </div>
-        `;
-        const header = container.querySelector("h1");
-        if (header) header.insertAdjacentHTML("afterend", tabsHtml);
-    }
-    
-    contenedorPedidos = document.getElementById("pedidos") || (() => {
-        const div = document.createElement("div");
-        div.id = "pedidos";
-        container.appendChild(div);
-        return div;
-    })();
-    
-    contenedorRepartidores = document.getElementById("repartidores") || (() => {
-        const div = document.createElement("div");
-        div.id = "repartidores";
-        div.style.display = "none";
-        container.appendChild(div);
-        return div;
-    })();
+    console.log("🚀 Inicializando panel admin...");
+    console.log("📦 Contenedor pedidos:", contenedorPedidos);
+    console.log("🛵 Contenedor repartidores:", contenedorRepartidores);
     
     cargarEstadisticas();
     cargarPedidos();
