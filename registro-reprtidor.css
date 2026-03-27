@@ -35,14 +35,12 @@ input {
   transition: all 0.2s ease;
 }
 
-/* Efecto al enfocar inputs */
 input:focus {
   border-color: #27ae60;
   outline: none;
   box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
 }
 
-/* ========== BOTÓN PRINCIPAL ========== */
 button {
   width: 100%;
   margin-top: 15px;
@@ -57,21 +55,18 @@ button {
   transition: all 0.2s ease;
 }
 
-/* Efecto hover para computadora */
 button:hover {
   background: #219a52;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(39,174,96,0.3);
 }
 
-/* Efecto active (cuando se presiona - para celular y computadora) */
 button:active {
   transform: translateY(0px);
   background: #1e8449;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* Botón deshabilitado */
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -79,7 +74,6 @@ button:disabled {
   box-shadow: none;
 }
 
-/* ========== FILE LABEL (SUBIR ARCHIVOS) ========== */
 .file-label {
   display: block;
   margin-top: 15px;
@@ -94,7 +88,6 @@ button:disabled {
   color: #27ae60;
 }
 
-/* Efecto hover para computadora */
 .file-label:hover {
   background: #e8f5e9;
   border-color: #219a52;
@@ -102,13 +95,11 @@ button:disabled {
   box-shadow: 0 4px 12px rgba(39,174,96,0.2);
 }
 
-/* Efecto active (cuando se presiona) */
 .file-label:active {
   transform: translateY(0px);
   background: #d4edda;
 }
 
-/* Ocultar el input file original pero mantenerlo funcional */
 .file-label input[type="file"] {
   display: none;
 }
@@ -122,7 +113,6 @@ button:disabled {
   word-break: break-all;
 }
 
-/* ========== BOTÓN WHATSAPP FLOTANTE ========== */
 .wpp-btn {
   position: fixed;
   bottom: 20px;
@@ -143,29 +133,24 @@ button:disabled {
   z-index: 1000;
 }
 
-/* Efecto hover para computadora */
 .wpp-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 4px 15px rgba(37,211,102,0.4);
 }
 
-/* Efecto active (cuando se presiona) */
 .wpp-btn:active {
   transform: scale(0.95);
 }
 
-/* ========== INPUTS CON EFECTOS TÁCTILES ========== */
 input {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Efecto al tocar en móvil */
 input:active {
   background-color: #f8f9fa;
   transform: scale(0.99);
 }
 
-/* ========== MENSAJE ========== */
 #mensaje {
   margin-top: 10px;
   text-align: center;
@@ -181,7 +166,6 @@ input:active {
   color: #dc3545;
 }
 
-/* ========== RESPONSIVE PARA MÓVIL ========== */
 @media (max-width: 600px) {
   .app {
     padding: 10px;
