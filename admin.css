@@ -1,5 +1,5 @@
 body {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: Arial;
   background: #f1f3f6;
   margin: 0;
   padding: 10px;
@@ -13,8 +13,8 @@ body {
 .card {
   background: white;
   padding: 15px;
+  margin-top: 10px;
   border-radius: 15px;
-  margin-top: 12px;
 }
 
 button, select {
