@@ -18,6 +18,7 @@ header { text-align: center; }
   background: white;
   padding: 20px;
   border-radius: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 input, textarea {
@@ -26,6 +27,14 @@ input, textarea {
   padding: 12px;
   border-radius: 10px;
   border: 1px solid #ddd;
+  transition: all 0.2s ease;
+}
+
+/* Efecto al enfocar inputs */
+input:focus, textarea:focus {
+  border-color: #27ae60;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(39,174,96,0.1);
 }
 
 #envioCalculado {
@@ -33,6 +42,7 @@ input, textarea {
   font-weight: bold;
 }
 
+/* ========== BOTÓN PRINCIPAL ========== */
 button {
   width: 100%;
   margin-top: 15px;
@@ -41,15 +51,69 @@ button {
   border: none;
   background: #27ae60;
   color: white;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* 🔥 SOLO AGREGAR ESTO - ESTILO PARA BOTÓN DESHABILITADO */
+/* Efecto hover para computadora */
+button:hover {
+  background: #219a52;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+}
+
+/* Efecto active (cuando se presiona - para celular y computadora) */
+button:active {
+  transform: translateY(0px);
+  background: #1e8449;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Botón deshabilitado */
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
+/* ========== FILE LABEL (SUBIR FOTOS) ========== */
+.file-label {
+  display: block;
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 2px dashed #27ae60;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #27ae60;
+}
+
+/* Efecto hover para computadora */
+.file-label:hover {
+  background: #e8f5e9;
+  border-color: #219a52;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39,174,96,0.2);
+}
+
+/* Efecto active (cuando se presiona) */
+.file-label:active {
+  transform: translateY(0px);
+  background: #d4edda;
+}
+
+/* Ocultar el input file original pero mantenerlo funcional */
+.file-label input[type="file"] {
+  display: none;
+}
+
+/* ========== BOTÓN WHATSAPP FLOTANTE ========== */
 .wpp-btn {
   position: fixed;
   bottom: 20px;
@@ -58,4 +122,73 @@ button:disabled {
   color: white;
   padding: 15px;
   border-radius: 50%;
+  text-decoration: none;
+  font-size: 24px;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+/* Efecto hover para computadora */
+.wpp-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(37,211,102,0.4);
+}
+
+/* Efecto active (cuando se presiona) */
+.wpp-btn:active {
+  transform: scale(0.95);
+}
+
+/* ========== INPUTS CON EFECTOS TÁCTILES ========== */
+input, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Efecto al tocar en móvil */
+input:active, textarea:active {
+  background-color: #f8f9fa;
+  transform: scale(0.99);
+}
+
+/* ========== MENSAJE ========== */
+#mensaje {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+/* ========== RESPONSIVE PARA MÓVIL ========== */
+@media (max-width: 600px) {
+  .app {
+    padding: 10px;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+  
+  button {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  .file-label {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .wpp-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+    bottom: 15px;
+    right: 15px;
+  }
 }

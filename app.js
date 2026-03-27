@@ -3,7 +3,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔥 VARIABLE PARA PREVENIR DOBLE CLIC
+// Variable para prevenir doble clic
 let isSubmitting = false;
 
 // Distancia simulada
@@ -42,13 +42,18 @@ const form = document.getElementById("pedidoForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   
-  // 🔥 PREVENIR DOBLE CLIC
+  // Prevenir doble clic
   if (isSubmitting) {
-    alert("⏳ Ya se está enviando tu solicitud. Por favor espera...");
+    const mensaje = document.getElementById("mensaje");
+    mensaje.textContent = "⏳ Ya se está enviando, por favor espera...";
+    mensaje.style.color = "#ffc107";
+    setTimeout(() => {
+      mensaje.textContent = "";
+    }, 2000);
     return;
   }
   
-  // 🔥 BLOQUEAR EL BOTÓN
+  // Bloquear el botón
   isSubmitting = true;
   const submitBtn = form.querySelector('button[type="submit"]');
   const textoOriginal = submitBtn.textContent;
@@ -59,7 +64,7 @@ form.addEventListener("submit", async (e) => {
     const fotosInput = document.getElementById("fotos");
     let fotosUrls = [];
 
-    // 🔥 SUBIR IMÁGENES
+    // Subir imágenes
     for (let file of fotosInput.files) {
       const fileName = Date.now() + "-" + file.name;
 
@@ -88,7 +93,7 @@ form.addEventListener("submit", async (e) => {
       envio: envioCalculado.value,
       fotos: fotosUrls,
       estado: "pendiente",
-      fecha: new Date().toISOString() // 🔥 AGREGAR FECHA PARA ORDENAR
+      fecha: new Date().toISOString()
     };
 
     const { data } = await supabaseClient.from("pedidos").insert([datos]).select();
@@ -101,27 +106,51 @@ form.addEventListener("submit", async (e) => {
 💰 $${datos.precio}
 🚚 Envío: ${datos.envio}`;
 
-    // 🔥 MOSTRAR MENSAJE DE ÉXITO
+    // Mostrar mensaje de éxito
     const mensaje = document.getElementById("mensaje");
-    mensaje.textContent = "✅ ¡Pedido enviado con éxito! Redirigiendo...";
+    mensaje.textContent = "✅ ¡Pedido enviado con éxito! Redirigiendo a WhatsApp...";
     mensaje.style.color = "#28a745";
+    mensaje.style.fontWeight = "bold";
     
     window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
     
   } catch (error) {
     console.error("Error:", error);
-    alert("❌ Error al enviar. Intenta de nuevo.");
     
-    // 🔥 RESTAURAR BOTÓN EN CASO DE ERROR
+    // Mostrar mensaje de error
+    const mensaje = document.getElementById("mensaje");
+    mensaje.textContent = "❌ Error al enviar. Intenta de nuevo.";
+    mensaje.style.color = "#dc3545";
+    mensaje.style.fontWeight = "bold";
+    
+    // Restaurar botón
     isSubmitting = false;
     submitBtn.textContent = textoOriginal;
     submitBtn.disabled = false;
     
-    const mensaje = document.getElementById("mensaje");
-    mensaje.textContent = "❌ Error al enviar. Intenta de nuevo.";
-    mensaje.style.color = "#dc3545";
+    // Limpiar mensaje después de 3 segundos
     setTimeout(() => {
       mensaje.textContent = "";
     }, 3000);
+  }
+});
+
+// Mostrar feedback al seleccionar imágenes
+const fotosInput = document.getElementById("fotos");
+fotosInput.addEventListener("change", function() {
+  const fileLabel = document.querySelector(".file-label");
+  const cantidad = this.files.length;
+  
+  if (cantidad > 0) {
+    const textoOriginal = fileLabel.innerHTML;
+    fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s)`;
+    fileLabel.style.background = "#d4edda";
+    fileLabel.style.borderColor = "#28a745";
+    
+    setTimeout(() => {
+      fileLabel.innerHTML = textoOriginal;
+      fileLabel.style.background = "";
+      fileLabel.style.borderColor = "";
+    }, 2000);
   }
 });
