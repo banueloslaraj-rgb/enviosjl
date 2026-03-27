@@ -1,40 +1,61 @@
-/* Agrega esto al final de styles.css */
+* { box-sizing: border-box; }
 
-/* Estilos para el botón cuando está deshabilitado */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f1f3f6;
+}
+
+.app {
+  max-width: 500px;
+  margin: auto;
+  padding: 15px;
+}
+
+header { text-align: center; }
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+input, textarea {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+#envioCalculado {
+  background: #eafaf1;
+  font-weight: bold;
+}
+
+button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #27ae60;
+  color: white;
+  cursor: pointer;
+}
+
+/* 🔥 SOLO AGREGAR ESTO - ESTILO PARA BOTÓN DESHABILITADO */
 button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-button:disabled:hover {
-    transform: none;
-    background: #27ae60;
-}
-
-/* Animación de carga en el botón */
-@keyframes btn-loading {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-button:disabled {
-    animation: btn-loading 1s infinite;
-}
-
-/* Mensaje de éxito/error */
-#mensaje {
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-/* Estilo para campos inválidos */
-input:invalid, textarea:invalid {
-    border-color: #dc3545;
-}
-
-/* Tooltip para campos requeridos */
-input:required:invalid, textarea:required:invalid {
-    border-color: #ffc107;
+.wpp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  padding: 15px;
+  border-radius: 50%;
 }
