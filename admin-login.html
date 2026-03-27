@@ -1,92 +1,59 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Admin</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #f1f3f6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .card {
-      background: white;
-      padding: 25px;
-      border-radius: 15px;
-      width: 300px;
-    }
-
-    input, button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-    }
-
-    button {
-      background: #27ae60;
-      color: white;
-      border: none;
-    }
-
-    #msg {
-      margin-top: 10px;
-      font-size: 14px;
-      color: red;
-    }
-  </style>
+<style>
+body {
+  font-family: Arial;
+  background: #f1f3f6;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card {
+  background:white;
+  padding:25px;
+  border-radius:15px;
+  width:300px;
+}
+input,button {
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border-radius:10px;
+}
+button {
+  background:#27ae60;
+  color:white;
+  border:none;
+}
+</style>
 </head>
 
 <body>
 
 <div class="card">
-  <h2>🔐 Administrador</h2>
+<h2>🔐 Administrador</h2>
 
-  <input type="email" id="email" placeholder="Correo">
-  <input type="password" id="password" placeholder="Contraseña">
+<input id="email" placeholder="Correo">
+<input id="password" type="password" placeholder="Contraseña">
 
-  <button onclick="login()">Ingresar</button>
+<button onclick="login()">Ingresar</button>
 
-  <p id="msg"></p>
+<p id="msg"></p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
 <script>
-const supabase = supabase.createClient(
-  "https://pknqqaxiqdllsygjctmb.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrbnFxYXhpcWRsbHN5Z2pjdG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDY0MDEsImV4cCI6MjA5MDEyMjQwMX0.o3XrQk2xgN7F9qfHVVg1Ixz5ZYPQ_edZe9-jAENgiTc"
-);
-
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const msg = document.getElementById("msg");
-
-  msg.textContent = "Ingresando...";
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    console.error(error);
-    msg.textContent = error.message; // 🔥 ahora verás el error real
-  } else {
-    msg.style.color = "green";
-    msg.textContent = "Login correcto ✅";
-
-    setTimeout(() => {
-      window.location.href = "admin.html";
-    }, 1000);
+function login(){
+  if(email.value==="enviosjl262@gmail.com" && password.value==="admin123"){
+    localStorage.setItem("admin","true");
+    window.location="admin.html";
+  }else{
+    msg.innerText="Datos incorrectos";
   }
 }
 </script>
