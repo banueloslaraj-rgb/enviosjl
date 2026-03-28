@@ -85,11 +85,16 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+}
+
+.btn-refrescar:hover {
+    background: rgba(255,255,255,0.3);
+    transform: rotate(180deg);
 }
 
 .btn-refrescar:active {
-    transform: rotate(180deg);
+    transform: rotate(180deg) scale(0.95);
 }
 
 .btn-cerrar-sesion {
@@ -100,7 +105,12 @@ h1 {
     border-radius: 20px;
     cursor: pointer;
     font-size: 12px;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+}
+
+.btn-cerrar-sesion:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
 }
 
 .btn-cerrar-sesion:active {
@@ -152,18 +162,25 @@ h1 {
     background: white;
     color: #666;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     font-size: 14px;
     font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .filter-btn.active {
     background: #27ae60;
     color: white;
+    box-shadow: 0 2px 8px rgba(39,174,96,0.4);
 }
 
 .filter-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.96);
 }
 
 /* Cards de pedidos */
@@ -175,6 +192,23 @@ h1 {
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     overflow: hidden;
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .card.estado-pendiente {
@@ -235,32 +269,173 @@ h1 {
     display: inline-block;
 }
 
+/* ========== BOTONES MEJORADOS ========== */
+
+/* Botón mapa */
 .map-btn {
-    background: #007bff;
+    background: linear-gradient(135deg, #007bff, #0056b3);
     margin: 5px 0;
-    padding: 8px;
+    padding: 10px 15px;
     font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+}
+
+.map-btn::before {
+    content: "🗺️";
+    font-size: 14px;
+}
+
+.map-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,123,255,0.4);
+    background: linear-gradient(135deg, #0056b3, #004085);
 }
 
 .map-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
 }
 
+/* Botón llamada */
 .btn-call {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     margin: 5px 5px 5px 0;
-    padding: 8px 12px;
-    background: #27ae60;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #28a745, #1e7e34);
     color: white;
-    border-radius: 8px;
+    border-radius: 25px;
     text-decoration: none;
     text-align: center;
     font-size: 14px;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(40,167,69,0.3);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-call::before {
+    content: "📞";
+    font-size: 14px;
+}
+
+.btn-call:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(40,167,69,0.4);
+    background: linear-gradient(135deg, #1e7e34, #155724);
 }
 
 .btn-call:active {
-    transform: scale(0.98);
+    transform: translateY(0px) scale(0.98);
+}
+
+/* Contenedor de botones de acción */
+.botones-accion {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.botones-accion button {
+    flex: 1;
+    margin-top: 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Botón Aceptar pedido */
+.botones-accion button:first-child {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    box-shadow: 0 2px 8px rgba(40,167,69,0.3);
+}
+
+.botones-accion button:first-child::before {
+    content: "✅";
+    font-size: 14px;
+}
+
+.botones-accion button:first-child:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(40,167,69,0.4);
+    background: linear-gradient(135deg, #1e7e34, #155724);
+}
+
+/* Botón En camino */
+.botones-accion button:nth-child(2) {
+    background: linear-gradient(135deg, #17a2b8, #117a8b);
+    color: white;
+    box-shadow: 0 2px 8px rgba(23,162,184,0.3);
+}
+
+.botones-accion button:nth-child(2)::before {
+    content: "🚚";
+    font-size: 14px;
+}
+
+.botones-accion button:nth-child(2):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(23,162,184,0.4);
+    background: linear-gradient(135deg, #117a8b, #0c5c6b);
+}
+
+/* Botón Entregado */
+.botones-accion button:last-child {
+    background: linear-gradient(135deg, #6c757d, #545b62);
+    color: white;
+    box-shadow: 0 2px 8px rgba(108,117,125,0.3);
+}
+
+.botones-accion button:last-child::before {
+    content: "✅";
+    font-size: 14px;
+}
+
+.botones-accion button:last-child:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(108,117,125,0.4);
+    background: linear-gradient(135deg, #545b62, #3d4248);
+}
+
+/* Efecto active para todos los botones de acción */
+.botones-accion button:active {
+    transform: translateY(0px) scale(0.97);
+    transition: all 0.05s ease;
+}
+
+/* Botón deshabilitado */
+.botones-accion button:disabled {
+    opacity: 0.6;
+    transform: none;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Botón único cuando solo hay uno */
+.botones-accion button:only-child {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
 }
 
 /* Imágenes */
@@ -288,15 +463,22 @@ h1 {
     width: 70px;
     height: 70px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+    border: 2px solid #ddd;
     background-color: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.imagenes img:hover {
+    transform: scale(1.05);
+    border-color: #27ae60;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .imagenes img:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
 }
 
 .estado-texto {
@@ -308,51 +490,33 @@ h1 {
     background: #f0f0f0;
 }
 
-.botones-accion {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-
-.botones-accion button {
-    flex: 1;
-    margin-top: 0;
-    padding: 10px;
-    font-size: 14px;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.botones-accion button:active {
-    transform: scale(0.98);
-}
-
 /* WhatsApp flotante */
 .wpp-btn {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: #25D366;
+    background: linear-gradient(135deg, #25D366, #128C7E);
     color: white;
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     text-decoration: none;
-    font-size: 28px;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 30px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(37,211,102,0.4);
     z-index: 1000;
 }
 
+.wpp-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(37,211,102,0.6);
+}
+
 .wpp-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.95) rotate(0deg);
 }
 
 /* Notificaciones */
@@ -360,16 +524,17 @@ h1 {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #27ae60;
+    background: linear-gradient(135deg, #27ae60, #219a52);
     color: white;
     padding: 12px 20px;
-    border-radius: 10px;
+    border-radius: 50px;
     display: flex;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     z-index: 1001;
     animation: slideIn 0.3s ease;
+    font-weight: 500;
 }
 
 .notification.hidden {
@@ -415,11 +580,22 @@ h1 {
     
     .botones-accion {
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
     }
     
     .botones-accion button {
         width: 100%;
+    }
+    
+    .map-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-call {
+        display: flex;
+        justify-content: center;
+        margin: 5px 0;
     }
     
     .imagenes img {
@@ -436,6 +612,14 @@ h1 {
     .status-indicator {
         justify-content: flex-end;
     }
+    
+    .wpp-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 26px;
+        bottom: 15px;
+        right: 15px;
+    }
 }
 
 /* Mejoras iOS */
@@ -445,7 +629,7 @@ h1 {
         transform: translateZ(0);
     }
     
-    button, .btn-call, .filter-btn {
+    button, .btn-call, .filter-btn, .map-btn {
         -webkit-tap-highlight-color: rgba(0,0,0,0.1);
     }
 }
