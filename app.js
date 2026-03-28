@@ -64,10 +64,11 @@ async function subirImagen(file, index) {
     // Generar nombre único para el archivo
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 10000);
-    const extension = file.name.split('.').pop().toLowerCase();
-    const fileName = `pedido_${timestamp}_${random}_${index}.${extension}`;
+    // Limpiar nombre del archivo
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `pedido_${timestamp}_${random}_${index}_${cleanName}`;
     
-    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}`);
+    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB`);
     
     try {
         // Subir a Supabase Storage
@@ -84,12 +85,14 @@ async function subirImagen(file, index) {
             return null;
         }
         
+        console.log(`✅ Imagen ${index + 1} subida correctamente`);
+        
         // Obtener URL pública
         const { data: urlData } = supabaseClient.storage
             .from("fotos")
             .getPublicUrl(fileName);
         
-        console.log(`✅ Imagen ${index + 1} subida: ${urlData.publicUrl}`);
+        console.log(`🔗 URL: ${urlData.publicUrl}`);
         return urlData.publicUrl;
         
     } catch (error) {
@@ -105,7 +108,9 @@ async function subirImagenes(files) {
         return [];
     }
     
-    console.log(`📸 Subiendo ${files.length} imagen(es)...`);
+    console.log(`📸 Iniciando subida de ${files.length} imagen(es)...`);
+    console.log("📸 Nombres de archivos:", Array.from(files).map(f => f.name));
+    
     const urls = [];
     
     for (let i = 0; i < files.length; i++) {
@@ -119,11 +124,14 @@ async function subirImagenes(files) {
             urls.push(url);
         }
         
-        // Pequeña pausa entre subidas para no saturar
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Pequeña pausa entre subidas
+        if (i < files.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
     }
     
     console.log(`📸 Subidas completadas: ${urls.length} de ${files.length}`);
+    console.log("📸 URLs finales:", urls);
     return urls;
 }
 
@@ -133,6 +141,7 @@ function actualizarLabelFotos(input) {
     if (!fileLabel) return;
     
     const cantidad = input.files.length;
+    console.log("📸 Cantidad de fotos seleccionadas:", cantidad);
     
     if (cantidad > 0) {
         fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) ✅`;
@@ -190,6 +199,17 @@ form.addEventListener("submit", async (e) => {
         const envioCalculado = document.getElementById("envioCalculado");
         const fotosInput = document.getElementById("fotos");
         
+        // DIAGNÓSTICO DE FOTOS
+        console.log("🔍 DIAGNÓSTICO DE FOTOS:");
+        console.log("fotosInput existe:", fotosInput);
+        if (fotosInput) {
+            console.log("fotosInput.files:", fotosInput.files);
+            console.log("Cantidad de archivos:", fotosInput.files.length);
+            for (let i = 0; i < fotosInput.files.length; i++) {
+                console.log(`Archivo ${i}:`, fotosInput.files[i].name, `${(fotosInput.files[i].size / 1024).toFixed(2)} KB`);
+            }
+        }
+        
         // Validar campos requeridos
         if (!recoleccion.value.trim()) throw new Error("📍 La dirección de recolección es requerida");
         if (!entrega.value.trim()) throw new Error("📍 La dirección de entrega es requerida");
@@ -203,12 +223,12 @@ form.addEventListener("submit", async (e) => {
         // Subir imágenes
         let fotosUrls = [];
         if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
-            console.log(`📸 Se encontraron ${fotosInput.files.length} imagen(es)`);
+            console.log(`📸 PROCESANDO ${fotosInput.files.length} imagen(es)`);
             submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
             fotosUrls = await subirImagenes(fotosInput.files);
-            console.log("📸 URLs obtenidas:", fotosUrls);
+            console.log("📸 URLs finales obtenidas:", fotosUrls);
         } else {
-            console.log("📸 No hay imágenes seleccionadas");
+            console.log("📸 No hay imágenes seleccionadas - continuando sin fotos");
         }
         
         // Calcular envío si no está calculado
@@ -237,6 +257,7 @@ form.addEventListener("submit", async (e) => {
         };
         
         console.log("💾 Guardando pedido en Supabase...");
+        console.log("📦 Datos a guardar:", JSON.stringify(datos, null, 2));
         submitBtn.textContent = "⏳ Guardando pedido...";
         
         // Guardar en Supabase
@@ -307,6 +328,8 @@ form.addEventListener("submit", async (e) => {
 const fotosInputInicial = document.getElementById("fotos");
 if (fotosInputInicial) {
     fotosInputInicial.addEventListener("change", function() {
+        console.log("📸 Evento change detectado!");
+        console.log("📸 Archivos seleccionados:", this.files.length);
         actualizarLabelFotos(this);
     });
 }
