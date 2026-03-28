@@ -1,4 +1,4 @@
-// 🔥 CONEXIÓN SUPABASE - Solo una vez
+// 🔥 CONEXIÓN SUPABASE
 const SUPABASE_URL = "https://pknqqaxiqdllsygjctmb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrbnFxYXhpcWRsbHN5Z2pjdG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDY0MDEsImV4cCI6MjA5MDEyMjQwMX0.o3XrQk2xgN7F9qfHVVg1Ixz5ZYPQ_edZe9-jAENgiTc";
 
@@ -14,36 +14,30 @@ function generarCodigo() {
 async function subirArchivo(file, carpeta, nombreArchivo) {
     if (!file) return null;
     
-    console.log(`📤 Subiendo archivo: ${nombreArchivo}, tamaño: ${file.size} bytes`);
+    console.log(`📤 Subiendo archivo: ${nombreArchivo}`);
     
-    // Limpiar nombre del archivo
     const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const extension = cleanName.split('.').pop();
     const fileName = `${carpeta}/${Date.now()}-${nombreArchivo}.${extension}`;
     
     try {
-        const { data, error } = await supabaseClient.storage
+        const { error } = await supabaseClient.storage
             .from("repartidores")
-            .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
+            .upload(fileName, file);
         
         if (error) {
             console.error(`❌ Error subiendo ${nombreArchivo}:`, error);
             return null;
         }
         
-        console.log(`✅ Archivo subido: ${fileName}`);
-        
-        const { data: urlData } = supabaseClient.storage
+        const { data } = supabaseClient.storage
             .from("repartidores")
             .getPublicUrl(fileName);
         
-        console.log(`🔗 URL: ${urlData.publicUrl}`);
-        return urlData.publicUrl;
+        console.log(`✅ Archivo subido: ${fileName}`);
+        return data.publicUrl;
     } catch (error) {
-        console.error(`❌ Error en subida de ${nombreArchivo}:`, error);
+        console.error(`❌ Error en subida:`, error);
         return null;
     }
 }
@@ -62,7 +56,7 @@ function mostrarMensaje(texto, tipo) {
 }
 
 // Enviar WhatsApp al repartidor
-async function enviarWhatsAppRepartidor(telefono, nombre, codigo) {
+function enviarWhatsAppRepartidor(telefono, nombre, codigo) {
     const mensaje = `🎉 *¡BIENVENIDO A MANDADITOS EXPRESS!* 🎉
 
 Hola ${nombre}, tu registro como repartidor ha sido exitoso.
@@ -84,7 +78,7 @@ Una vez aprobado, podrás empezar a recibir pedidos.
 }
 
 // Enviar WhatsApp al administrador
-async function enviarWhatsAppAdmin(repartidor, codigo) {
+function enviarWhatsAppAdmin(repartidor, codigo) {
     const adminWhatsApp = "5213111063251";
     
     const mensaje = `🛵 *NUEVO REGISTRO DE REPARTIDOR* 🛵
@@ -116,33 +110,25 @@ ${repartidor.licencia ? "✅ Licencia de conducir" : "⚠️ Licencia no subida 
 
 // Configurar eventos de archivos
 function setupFileInputs() {
-    const inputs = [
-        { id: 'credencialFrente', label: 'Credencial frente' },
-        { id: 'credencialReverso', label: 'Credencial reverso' },
-        { id: 'comprobanteDomicilio', label: 'Comprobante' },
-        { id: 'licencia', label: 'Licencia' },
-        { id: 'fotoVehiculo', label: 'Foto vehículo' },
-        { id: 'fotoPlacas', label: 'Foto placas' }
-    ];
+    const inputs = ['credencialFrente', 'credencialReverso', 'comprobanteDomicilio', 'licencia', 'fotoVehiculo', 'fotoPlacas'];
     
-    inputs.forEach(({ id }) => {
+    inputs.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('change', function() {
-                const labelElement = this.closest('.file-label');
+                const label = this.closest('.file-label');
                 if (this.files && this.files[0]) {
                     const fileName = this.files[0].name;
-                    let existingSpan = labelElement.querySelector('.file-name');
-                    if (!existingSpan) {
-                        existingSpan = document.createElement('span');
-                        existingSpan.className = 'file-name';
-                        labelElement.appendChild(existingSpan);
+                    let span = label.querySelector('.file-name');
+                    if (!span) {
+                        span = document.createElement('span');
+                        span.className = 'file-name';
+                        label.appendChild(span);
                     }
-                    existingSpan.textContent = `✅ ${fileName.substring(0, 30)}${fileName.length > 30 ? '...' : ''}`;
-                    existingSpan.style.color = '#27ae60';
+                    span.textContent = `✅ ${fileName.substring(0, 30)}${fileName.length > 30 ? '...' : ''}`;
                 } else {
-                    const existingSpan = labelElement.querySelector('.file-name');
-                    if (existingSpan) existingSpan.remove();
+                    const span = label.querySelector('.file-name');
+                    if (span) span.remove();
                 }
             });
         }
@@ -154,15 +140,15 @@ const form = document.getElementById('registroForm');
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    console.log("🚀 Iniciando registro de repartidor...");
+    console.log("🚀 Iniciando registro...");
     
     if (isSubmitting) {
-        mostrarMensaje("⏳ Ya se está enviando el registro, espera...", "info");
+        mostrarMensaje("⏳ Ya se está enviando, espera...", "info");
         return;
     }
     
     isSubmitting = true;
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtn = form.querySelector('button');
     const textoOriginal = submitBtn.textContent;
     submitBtn.textContent = "⏳ Registrando...";
     submitBtn.disabled = true;
@@ -193,23 +179,22 @@ form.addEventListener('submit', async (e) => {
         const fotoPlacas = document.getElementById('fotoPlacas').files[0];
         
         // Validar archivos requeridos
-        if (!credFrente) throw new Error("🪪 Credencial (Frente) es requerida");
-        if (!credReverso) throw new Error("🪪 Credencial (Reverso) es requerida");
+        if (!credFrente) throw new Error("🪪 Credencial frente requerida");
+        if (!credReverso) throw new Error("🪪 Credencial reverso requerida");
         if (!comprobante) throw new Error("🏠 Comprobante de domicilio requerido");
         if (!fotoVehiculo) throw new Error("📸 Foto del vehículo requerida");
         if (!fotoPlacas) throw new Error("🔢 Foto de placas requerida");
         
         mostrarMensaje("📤 Subiendo documentos...", "info");
+        submitBtn.textContent = "⏳ Subiendo documentos...";
         
         // Subir archivos
-        const [urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac] = await Promise.all([
-            subirArchivo(credFrente, 'credenciales', `frente_${telefono}`),
-            subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`),
-            subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`),
-            licencia ? subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : Promise.resolve(null),
-            subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`),
-            subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`)
-        ]);
+        const urlFrente = await subirArchivo(credFrente, 'credenciales', `frente_${telefono}`);
+        const urlReverso = await subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`);
+        const urlComprobante = await subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`);
+        const urlLicencia = licencia ? await subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : null;
+        const urlFotoVehi = await subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`);
+        const urlFotoPlac = await subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`);
         
         // Verificar archivos requeridos
         if (!urlFrente) throw new Error("❌ Error al subir credencial frente");
@@ -219,6 +204,7 @@ form.addEventListener('submit', async (e) => {
         if (!urlFotoPlac) throw new Error("❌ Error al subir foto placas");
         
         // Generar código único
+        submitBtn.textContent = "⏳ Generando código...";
         let codigo = generarCodigo();
         let esUnico = false;
         let intentos = 0;
@@ -228,7 +214,7 @@ form.addEventListener('submit', async (e) => {
                 .from("repartidores")
                 .select("codigo")
                 .eq("codigo", codigo)
-                .single();
+                .maybeSingle();
             
             if (!existe) {
                 esUnico = true;
@@ -239,6 +225,8 @@ form.addEventListener('submit', async (e) => {
         }
         
         // Crear registro
+        submitBtn.textContent = "⏳ Guardando registro...";
+        
         const datosRepartidor = {
             nombre_completo: nombre,
             telefono: telefono,
@@ -261,6 +249,7 @@ form.addEventListener('submit', async (e) => {
             .insert([datosRepartidor]);
         
         if (insertError) {
+            console.error("Error insert:", insertError);
             throw new Error(insertError.message);
         }
         
@@ -277,8 +266,9 @@ form.addEventListener('submit', async (e) => {
         mensajeDiv.style.display = 'block';
         
         // Enviar WhatsApps
-        await enviarWhatsAppRepartidor(telefono, nombre, codigo);
-        await enviarWhatsAppAdmin(datosRepartidor, codigo);
+        submitBtn.textContent = "⏳ Enviando WhatsApp...";
+        enviarWhatsAppRepartidor(telefono, nombre, codigo);
+        enviarWhatsAppAdmin(datosRepartidor, codigo);
         
         // Limpiar formulario
         form.reset();
