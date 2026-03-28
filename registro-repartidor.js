@@ -13,13 +13,15 @@ function generarCodigo() {
 async function subirArchivo(file, carpeta, nombreArchivo) {
     if (!file) return null;
     
+    console.log(`📤 Subiendo archivo: ${nombreArchivo}, tamaño: ${file.size} bytes`);
+    
     // Limpiar nombre del archivo
     const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const extension = cleanName.split('.').pop();
     const fileName = `${carpeta}/${Date.now()}-${nombreArchivo}.${extension}`;
     
     try {
-        const { error } = await supabase.storage
+        const { data, error } = await supabase.storage
             .from("repartidores")
             .upload(fileName, file, {
                 cacheControl: '3600',
@@ -27,17 +29,20 @@ async function subirArchivo(file, carpeta, nombreArchivo) {
             });
         
         if (error) {
-            console.error("Error subiendo archivo:", error);
+            console.error(`❌ Error subiendo ${nombreArchivo}:`, error);
             return null;
         }
         
-        const { data } = supabase.storage
+        console.log(`✅ Archivo subido: ${fileName}`);
+        
+        const { data: urlData } = supabase.storage
             .from("repartidores")
             .getPublicUrl(fileName);
         
-        return data.publicUrl;
+        console.log(`🔗 URL: ${urlData.publicUrl}`);
+        return urlData.publicUrl;
     } catch (error) {
-        console.error("Error en subida:", error);
+        console.error(`❌ Error en subida de ${nombreArchivo}:`, error);
         return null;
     }
 }
@@ -148,6 +153,8 @@ const form = document.getElementById('registroForm');
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    console.log("🚀 Iniciando registro de repartidor...");
+    
     if (isSubmitting) {
         mostrarMensaje("⏳ Ya se está enviando el registro, espera...", "info");
         return;
@@ -167,6 +174,8 @@ form.addEventListener('submit', async (e) => {
         const marcaVehiculo = document.getElementById('marcaVehiculo').value.trim();
         const colorVehiculo = document.getElementById('colorVehiculo').value.trim();
         
+        console.log("📝 Datos del repartidor:", { nombre, telefono, email, marcaVehiculo, colorVehiculo });
+        
         // Validaciones
         if (!nombre) throw new Error("👤 Nombre completo requerido");
         if (!telefono) throw new Error("📞 Teléfono requerido");
@@ -182,6 +191,15 @@ form.addEventListener('submit', async (e) => {
         const fotoVehiculo = document.getElementById('fotoVehiculo').files[0];
         const fotoPlacas = document.getElementById('fotoPlacas').files[0];
         
+        console.log("📁 Archivos:", {
+            credFrente: credFrente?.name,
+            credReverso: credReverso?.name,
+            comprobante: comprobante?.name,
+            licencia: licencia?.name,
+            fotoVehiculo: fotoVehiculo?.name,
+            fotoPlacas: fotoPlacas?.name
+        });
+        
         // Validar archivos requeridos
         if (!credFrente) throw new Error("🪪 Credencial (Frente) es requerida");
         if (!credReverso) throw new Error("🪪 Credencial (Reverso) es requerida");
@@ -190,23 +208,45 @@ form.addEventListener('submit', async (e) => {
         if (!fotoPlacas) throw new Error("🔢 Foto de placas requerida");
         
         mostrarMensaje("📤 Subiendo documentos...", "info");
+        submitBtn.textContent = "⏳ Subiendo documentos (0/6)...";
         
-        // Subir archivos
-        submitBtn.textContent = "⏳ Subiendo documentos...";
+        // Subir archivos uno por uno para mejor control
+        let subidas = 0;
         
-        const [urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac] = await Promise.all([
-            subirArchivo(credFrente, 'credenciales', `frente_${telefono}`),
-            subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`),
-            subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`),
-            licencia ? subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : Promise.resolve(null),
-            subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`),
-            subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`)
-        ]);
+        const urlFrente = await subirArchivo(credFrente, 'credenciales', `frente_${telefono}`);
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        const urlReverso = await subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`);
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        const urlComprobante = await subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`);
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        const urlLicencia = licencia ? await subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : null;
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        const urlFotoVehi = await subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`);
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        const urlFotoPlac = await subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`);
+        subidas++;
+        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
+        
+        console.log("📸 URLs obtenidas:", {
+            urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac
+        });
         
         // Verificar que los archivos requeridos se subieron correctamente
-        if (!urlFrente || !urlReverso || !urlComprobante || !urlFotoVehi || !urlFotoPlac) {
-            throw new Error("❌ Error al subir documentos. Intenta de nuevo.");
-        }
+        if (!urlFrente) throw new Error("❌ Error al subir credencial frente");
+        if (!urlReverso) throw new Error("❌ Error al subir credencial reverso");
+        if (!urlComprobante) throw new Error("❌ Error al subir comprobante de domicilio");
+        if (!urlFotoVehi) throw new Error("❌ Error al subir foto del vehículo");
+        if (!urlFotoPlac) throw new Error("❌ Error al subir foto de placas");
         
         // Generar código único
         submitBtn.textContent = "⏳ Generando código...";
@@ -214,12 +254,16 @@ form.addEventListener('submit', async (e) => {
         let esUnico = false;
         let intentos = 0;
         
+        console.log("🔑 Generando código único...");
+        
         while (!esUnico && intentos < 10) {
-            const { data: existe } = await supabase
+            const { data: existe, error: searchError } = await supabase
                 .from("repartidores")
                 .select("codigo")
                 .eq("codigo", codigo)
                 .single();
+            
+            console.log(`Intento ${intentos + 1}: código ${codigo}, existe: ${!!existe}`);
             
             if (!existe) {
                 esUnico = true;
@@ -228,6 +272,8 @@ form.addEventListener('submit', async (e) => {
                 intentos++;
             }
         }
+        
+        console.log("✅ Código final:", codigo);
         
         // Crear registro
         submitBtn.textContent = "⏳ Guardando registro...";
@@ -249,14 +295,19 @@ form.addEventListener('submit', async (e) => {
             fecha_registro: new Date().toISOString()
         };
         
-        const { error: insertError } = await supabase
+        console.log("💾 Insertando en Supabase:", datosRepartidor);
+        
+        const { data: insertData, error: insertError } = await supabase
             .from("repartidores")
-            .insert([datosRepartidor]);
+            .insert([datosRepartidor])
+            .select();
         
         if (insertError) {
-            console.error("Error insert:", insertError);
+            console.error("❌ Error insert:", insertError);
             throw new Error(insertError.message);
         }
+        
+        console.log("✅ Registro exitoso:", insertData);
         
         // Mostrar código al usuario
         const mensajeDiv = document.getElementById('mensaje');
@@ -285,13 +336,15 @@ form.addEventListener('submit', async (e) => {
         
         submitBtn.textContent = "✅ Registro completo!";
         
+        console.log("🎉 Proceso completado, redirigiendo...");
+        
         // Redirigir después de 5 segundos
         setTimeout(() => {
             window.location.href = 'login-repartidor.html';
         }, 5000);
         
     } catch (error) {
-        console.error("Error:", error);
+        console.error("❌ Error completo:", error);
         mostrarMensaje(`❌ ${error.message}`, "error");
         
         isSubmitting = false;
@@ -302,3 +355,5 @@ form.addEventListener('submit', async (e) => {
 
 // Inicializar
 setupFileInputs();
+
+console.log("🚀 Página de registro de repartidores lista");
