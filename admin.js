@@ -57,32 +57,51 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
-// 🔄 ACTUALIZAR ESTADO DE PEDIDO - VERSIÓN SIMPLIFICADA
+// 🔄 ACTUALIZAR ESTADO DE PEDIDO - CORREGIDO PARA UUID
 async function actualizarEstadoPedido(id) {
     console.log("🔴 FUNCIÓN LLAMADA - ID:", id);
     
+    // Crear un ID válido para el select (reemplazar guiones)
+    const selectId = `estado-${id}`;
+    console.log("🔍 Buscando select con ID:", selectId);
+    
     // Obtener el select
-    const selectElement = document.getElementById(`estado-${id}`);
+    const selectElement = document.getElementById(selectId);
     if (!selectElement) {
-        console.error("❌ No se encontró el select para ID:", id);
-        alert("Error: No se encontró el selector");
+        console.error("❌ No se encontró el select para ID:", selectId);
+        alert("Error: No se encontró el selector para el pedido");
         return;
     }
     
     const nuevoEstado = selectElement.value;
-    console.log("📊 Nuevo estado:", nuevoEstado);
+    console.log("📊 Nuevo estado seleccionado:", nuevoEstado);
     
-    // Buscar el botón que está siendo clickeado
-    const btn = document.querySelector(`button[onclick*="actualizarEstadoPedido(${id}"]`);
-    if (!btn) {
-        console.error("❌ No se encontró el botón");
-        alert("Error: No se encontró el botón");
+    // Confirmar con el usuario
+    const confirmar = confirm(`¿Cambiar estado del pedido a "${nuevoEstado}"?`);
+    if (!confirmar) {
+        console.log("❌ Usuario canceló");
         return;
     }
     
-    const textoOriginal = btn.innerText;
-    btn.innerText = "⏳ Actualizando...";
-    btn.disabled = true;
+    // Buscar el botón
+    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoPedido('${id}']`);
+    if (!btn) {
+        console.error("❌ No se encontró el botón");
+        // Intentar encontrar por texto alternativo
+        const buttons = document.querySelectorAll('button');
+        for (let b of buttons) {
+            if (b.innerText.includes('Actualizar estado')) {
+                // No podemos identificar cuál es, así que usamos el que está más cerca
+                console.log("⚠️ Usando botón alternativo");
+            }
+        }
+    }
+    
+    const textoOriginal = btn ? btn.innerText : "Actualizar estado";
+    if (btn) {
+        btn.innerText = "⏳ Actualizando...";
+        btn.disabled = true;
+    }
     
     try {
         // Actualizar en Supabase
@@ -98,9 +117,7 @@ async function actualizarEstadoPedido(id) {
         }
         
         console.log("✅ Estado actualizado correctamente:", data);
-        
-        // Mostrar mensaje de éxito
-        btn.innerText = "✅ Actualizado!";
+        alert("✅ Estado actualizado correctamente!");
         
         // Recargar la lista de pedidos
         setTimeout(() => {
@@ -109,9 +126,11 @@ async function actualizarEstadoPedido(id) {
         
     } catch (error) {
         console.error("❌ Error:", error);
-        alert("Error al actualizar: " + error.message);
-        btn.innerText = textoOriginal;
-        btn.disabled = false;
+        alert("❌ Error al actualizar: " + error.message);
+        if (btn) {
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+        }
     }
 }
 
@@ -181,9 +200,10 @@ async function cargarPedidos() {
                 `;
             }
             
+            // IMPORTANTE: Usar el ID completo con comillas simples para UUID
             card.innerHTML = `
                 <div class="pedido-id">
-                    🆔 Pedido #${p.id}
+                    🆔 Pedido #${p.id.substring(0, 8)}...
                     <span class="pedido-fecha">📅 ${fechaFormateada}</span>
                 </div>
                 
@@ -214,7 +234,7 @@ async function cargarPedidos() {
                     <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoPedido(${p.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoPedido('${p.id}')" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
                 
                 ${imagenesHtml}
             `;
@@ -228,7 +248,7 @@ async function cargarPedidos() {
     }
 }
 
-// 🛵 Cargar repartidores
+// 🛵 Cargar repartidores (misma función, pero con UUID si es necesario)
 async function cargarRepartidores() {
     if (!contenedorRepartidores) return;
     
@@ -326,7 +346,7 @@ async function cargarRepartidores() {
                     <option value="rechazado" ${r.estado === "rechazado" ? "selected" : ""}>❌ Rechazado</option>
                 </select>
                 
-                <button onclick="actualizarEstadoRepartidor(${r.id})" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+                <button onclick="actualizarEstadoRepartidor('${r.id}')" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
             `;
             
             contenedorRepartidores.appendChild(card);
@@ -344,7 +364,7 @@ async function actualizarEstadoRepartidor(id) {
     if (!selectElement) return;
     
     const estado = selectElement.value;
-    const btn = document.querySelector(`button[onclick*="actualizarEstadoRepartidor(${id}"]`);
+    const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoRepartidor('${id}']`);
     if (!btn) return;
     
     const textoOriginal = btn.innerText;
