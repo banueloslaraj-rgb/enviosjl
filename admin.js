@@ -7,8 +7,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let pedidosCache = [];
 let repartidoresCache = [];
 let intervaloActualizacion = null;
-let ultimaCantidadActivos = 0;
+let ultimaCantidadPendientes = 0;
 let notificacionesActivas = true;
+let filtroSeccion = null; // Para filtrar por estado al hacer clic en stats
 
 // Elementos DOM
 const contenedorPedidos = document.getElementById("pedidos");
@@ -92,6 +93,7 @@ function cambiarPestaña(pestaña) {
         repartidoresDiv.style.display = "none";
         tabs.forEach(tab => tab.classList.remove("active"));
         document.querySelector('[data-tab="pedidos"]').classList.add("active");
+        filtroSeccion = null;
         cargarPedidos();
     } else {
         pedidosDiv.style.display = "none";
@@ -102,6 +104,25 @@ function cambiarPestaña(pestaña) {
     }
 }
 
+// Función para filtrar por estado al hacer clic en stats
+function filtrarPorEstado(estado) {
+    filtroSeccion = estado;
+    cargarPedidos();
+    
+    // Scroll suave a la sección
+    setTimeout(() => {
+        const seccion = document.querySelector(`.${estado}-titulo`);
+        if (seccion) {
+            seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            seccion.style.background = "linear-gradient(135deg, #fff3cd, #ffeaa7)";
+            setTimeout(() => {
+                seccion.style.background = "";
+            }, 1000);
+        }
+    }, 300);
+}
+
+// Cargar repartidores con opción de cambiar estado
 async function cargarRepartidores() {
     if (!contenedorRepartidores) return;
     
@@ -129,24 +150,97 @@ async function cargarRepartidores() {
             <h3>🛵 Repartidores Registrados (${repartidoresCache.length})</h3>
         </div>
         ${repartidoresCache.map(r => `
-            <div class="repartidor-card">
+            <div class="repartidor-card" id="repartidor-${r.id}">
                 <div class="repartidor-header">
                     <strong>👤 ${r.nombre_completo}</strong>
-                    <span class="repartidor-estado ${r.estado === 'activo' ? 'estado-activo' : 'estado-inactivo'}">
-                        ${r.estado === 'activo' ? '🟢 Activo' : '🔴 Inactivo'}
-                    </span>
+                    <div class="repartidor-actions">
+                        <span class="repartidor-estado ${r.estado === 'activo' ? 'estado-activo' : 'estado-inactivo'}">
+                            ${r.estado === 'activo' ? '🟢 Activo' : '🔴 Inactivo'}
+                        </span>
+                        <button class="btn-cambiar-estado" onclick="cambiarEstadoRepartidor('${r.id}', '${r.estado}')">
+                            ${r.estado === 'activo' ? '🔴 Desactivar' : '🟢 Activar'}
+                        </button>
+                    </div>
                 </div>
                 <div class="repartidor-info">
-                    <p><i class="fas fa-phone"></i> ${r.telefono}</p>
-                    <p><i class="fas fa-envelope"></i> ${r.email}</p>
-                    <p><i class="fas fa-motorcycle"></i> ${r.marca_vehicula || 'No especificado'} - ${r.color_vehicula || ''}</p>
-                    <p><i class="fas fa-calendar"></i> Registrado: ${formatearFechaLocal(r.fecha_registro)}</p>
+                    <p><i class="fas fa-phone"></i> <strong>Teléfono:</strong> ${r.telefono || 'No registrado'}</p>
+                    <p><i class="fas fa-envelope"></i> <strong>Email:</strong> ${r.email || 'No registrado'}</p>
+                    <p><i class="fas fa-code"></i> <strong>Código:</strong> ${r.codigo || 'No asignado'}</p>
+                    <p><i class="fas fa-motorcycle"></i> <strong>Vehículo:</strong> ${r.marca_vehicula || 'No especificado'} ${r.color_vehicula ? `(${r.color_vehicula})` : ''}</p>
+                    <p><i class="fas fa-calendar"></i> <strong>Registro:</strong> ${formatearFechaLocal(r.fecha_registro)}</p>
+                </div>
+                <div class="repartidor-documentos">
+                    <div class="documentos-titulo" onclick="toggleDocumentos('${r.id}')">
+                        <i class="fas fa-chevron-down"></i> 📄 Ver documentos
+                    </div>
+                    <div class="documentos-contenido" id="docs-${r.id}" style="display: none;">
+                        ${r.credencial1_frente ? `<div class="documento">
+                            <strong>Credencial Frontal:</strong>
+                            <img src="${r.credencial1_frente}" onclick="verImagen('${r.credencial1_frente}')">
+                        </div>` : ''}
+                        ${r.credencial1_reverso ? `<div class="documento">
+                            <strong>Credencial Reverso:</strong>
+                            <img src="${r.credencial1_reverso}" onclick="verImagen('${r.credencial1_reverso}')">
+                        </div>` : ''}
+                        ${r.comprobante_domicilio ? `<div class="documento">
+                            <strong>Comprobante Domicilio:</strong>
+                            <img src="${r.comprobante_domicilio}" onclick="verImagen('${r.comprobante_domicilio}')">
+                        </div>` : ''}
+                        ${r.licencia ? `<div class="documento">
+                            <strong>Licencia:</strong>
+                            <img src="${r.licencia}" onclick="verImagen('${r.licencia}')">
+                        </div>` : ''}
+                        ${r.foto_vehicula ? `<div class="documento">
+                            <strong>Foto Vehículo:</strong>
+                            <img src="${r.foto_vehicula}" onclick="verImagen('${r.foto_vehicula}')">
+                        </div>` : ''}
+                        ${r.foto_placa ? `<div class="documento">
+                            <strong>Foto Placa:</strong>
+                            <img src="${r.foto_placa}" onclick="verImagen('${r.foto_placa}')">
+                        </div>` : ''}
+                    </div>
                 </div>
             </div>
         `).join('')}
     `;
 }
 
+// Cambiar estado del repartidor
+async function cambiarEstadoRepartidor(id, estadoActual) {
+    const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+    
+    try {
+        const { error } = await supabaseClient
+            .from("repartidores")
+            .update({ estado: nuevoEstado })
+            .eq("id", id);
+        
+        if (error) throw error;
+        
+        mostrarNotificacion(`✅ Repartidor ${nuevoEstado === 'activo' ? 'activado' : 'desactivado'} correctamente`, "info");
+        cargarRepartidores();
+        
+    } catch (error) {
+        console.error("Error:", error);
+        mostrarNotificacion("❌ Error al cambiar estado", "error");
+    }
+}
+
+// Alternar documentos
+function toggleDocumentos(id) {
+    const docsDiv = document.getElementById(`docs-${id}`);
+    const titulo = document.querySelector(`#repartidor-${id} .documentos-titulo i`);
+    
+    if (docsDiv.style.display === "none") {
+        docsDiv.style.display = "grid";
+        if (titulo) titulo.style.transform = "rotate(180deg)";
+    } else {
+        docsDiv.style.display = "none";
+        if (titulo) titulo.style.transform = "rotate(0deg)";
+    }
+}
+
+// Cargar pedidos con filtro por sección
 async function cargarPedidos() {
     if (!contenedorPedidos) return;
     
@@ -171,8 +265,8 @@ async function cargarPedidos() {
     const entregados = pedidosCache.filter(p => p.estado === "entregado");
     
     // Verificar nuevos pedidos pendientes
-    if (pendientes.length > ultimaCantidadActivos) {
-        const nuevos = pendientes.length - ultimaCantidadActivos;
+    if (pendientes.length > ultimaCantidadPendientes) {
+        const nuevos = pendientes.length - ultimaCantidadPendientes;
         mostrarNotificacion(`🔔 ${nuevos} nuevo(s) pedido(s) pendiente(s)`, "info");
         try {
             const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
@@ -180,7 +274,7 @@ async function cargarPedidos() {
             audio.play();
         } catch (e) {}
     }
-    ultimaCantidadActivos = pendientes.length;
+    ultimaCantidadPendientes = pendientes.length;
     
     if (pedidosCache.length === 0) {
         contenedorPedidos.innerHTML = '<div style="text-align:center; padding:20px;">📭 No hay pedidos registrados</div>';
@@ -189,87 +283,110 @@ async function cargarPedidos() {
     
     let html = `
         <div class="stats-pedidos">
-            <div class="stat-badge pendientes">
+            <div class="stat-badge pendientes" onclick="filtrarPorEstado('pendiente')">
                 <i class="fas fa-clock"></i>
                 <span>${pendientes.length}</span>
                 <small>Pendientes</small>
             </div>
-            <div class="stat-badge asignados">
+            <div class="stat-badge asignados" onclick="filtrarPorEstado('asignado')">
                 <i class="fas fa-check-circle"></i>
                 <span>${asignados.length}</span>
                 <small>Asignados</small>
             </div>
-            <div class="stat-badge encamino">
+            <div class="stat-badge encamino" onclick="filtrarPorEstado('en camino')">
                 <i class="fas fa-truck"></i>
                 <span>${enCamino.length}</span>
                 <small>En camino</small>
             </div>
-            <div class="stat-badge entregados">
+            <div class="stat-badge entregados" onclick="filtrarPorEstado('entregado')">
                 <i class="fas fa-box"></i>
                 <span>${entregados.length}</span>
                 <small>Entregados</small>
             </div>
         </div>
+        <div class="filtro-activo" id="filtro-activo" style="display: ${filtroSeccion ? 'block' : 'none'};">
+            <span>Filtrando por: <strong>${filtroSeccion ? filtroSeccion.toUpperCase() : ''}</strong></span>
+            <button onclick="limpiarFiltro()" class="limpiar-filtro">✖ Limpiar filtro</button>
+        </div>
     `;
     
+    // Determinar qué pedidos mostrar según el filtro
+    let pedidosAMostrar = {};
+    if (filtroSeccion === 'pendiente') {
+        pedidosAMostrar = { pendientes: pendientes };
+    } else if (filtroSeccion === 'asignado') {
+        pedidosAMostrar = { asignados: asignados };
+    } else if (filtroSeccion === 'en camino') {
+        pedidosAMostrar = { enCamino: enCamino };
+    } else if (filtroSeccion === 'entregado') {
+        pedidosAMostrar = { entregados: entregados };
+    } else {
+        pedidosAMostrar = { pendientes, asignados, enCamino, entregados };
+    }
+    
     // Sección Pendientes
-    if (pendientes.length > 0) {
+    if (pedidosAMostrar.pendientes && pedidosAMostrar.pendientes.length > 0) {
         html += `
             <div class="seccion-pedidos">
                 <div class="seccion-titulo pendientes-titulo">
-                    <i class="fas fa-bell"></i> 📋 PENDIENTES (${pendientes.length})
+                    <i class="fas fa-bell"></i> 📋 PENDIENTES (${pedidosAMostrar.pendientes.length})
                 </div>
                 <div class="pedidos-grid">
-                    ${pendientes.map(p => renderizarPedidoAdmin(p)).join('')}
+                    ${pedidosAMostrar.pendientes.map(p => renderizarPedidoAdmin(p)).join('')}
                 </div>
             </div>
         `;
     }
     
     // Sección Asignados
-    if (asignados.length > 0) {
+    if (pedidosAMostrar.asignados && pedidosAMostrar.asignados.length > 0) {
         html += `
             <div class="seccion-pedidos">
                 <div class="seccion-titulo asignados-titulo">
-                    <i class="fas fa-check-circle"></i> ✅ ASIGNADOS (${asignados.length})
+                    <i class="fas fa-check-circle"></i> ✅ ASIGNADOS (${pedidosAMostrar.asignados.length})
                 </div>
                 <div class="pedidos-grid">
-                    ${asignados.map(p => renderizarPedidoAdmin(p)).join('')}
+                    ${pedidosAMostrar.asignados.map(p => renderizarPedidoAdmin(p)).join('')}
                 </div>
             </div>
         `;
     }
     
     // Sección En camino
-    if (enCamino.length > 0) {
+    if (pedidosAMostrar.enCamino && pedidosAMostrar.enCamino.length > 0) {
         html += `
             <div class="seccion-pedidos">
                 <div class="seccion-titulo encamino-titulo">
-                    <i class="fas fa-truck"></i> 🚚 EN CAMINO (${enCamino.length})
+                    <i class="fas fa-truck"></i> 🚚 EN CAMINO (${pedidosAMostrar.enCamino.length})
                 </div>
                 <div class="pedidos-grid">
-                    ${enCamino.map(p => renderizarPedidoAdmin(p)).join('')}
+                    ${pedidosAMostrar.enCamino.map(p => renderizarPedidoAdmin(p)).join('')}
                 </div>
             </div>
         `;
     }
     
     // Sección Entregados (colapsable)
-    if (entregados.length > 0) {
+    if (pedidosAMostrar.entregados && pedidosAMostrar.entregados.length > 0) {
         html += `
             <div class="seccion-pedidos entregados-seccion">
                 <div class="seccion-titulo entregados-titulo" onclick="toggleEntregados()">
                     <i class="fas fa-chevron-down" id="toggle-icon"></i> 
-                    📦 ENTREGADOS (${entregados.length})
+                    📦 ENTREGADOS (${pedidosAMostrar.entregados.length})
                 </div>
                 <div id="entregados-container" class="pedidos-grid" style="display: none;">
-                    ${entregados.map(p => renderizarPedidoAdmin(p)).join('')}
+                    ${pedidosAMostrar.entregados.map(p => renderizarPedidoAdmin(p)).join('')}
                 </div>
             </div>
         `;
     }
     
     contenedorPedidos.innerHTML = html;
+}
+
+function limpiarFiltro() {
+    filtroSeccion = null;
+    cargarPedidos();
 }
 
 function renderizarPedidoAdmin(p) {
@@ -312,24 +429,30 @@ function renderizarPedidoAdmin(p) {
                 <div class="admin-direcciones">
                     <div class="direccion">
                         <i class="fas fa-map-marker-alt" style="color: #dc3545;"></i>
-                        <strong>Recolección:</strong> ${p.recoleccion}
+                        <strong>Recolección:</strong>
+                        <span>${p.recoleccion}</span>
                         <button class="admin-map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver mapa</button>
                     </div>
                     <div class="direccion">
                         <i class="fas fa-flag-checkered" style="color: #28a745;"></i>
-                        <strong>Entrega:</strong> ${p.entrega}
+                        <strong>Entrega:</strong>
+                        <span>${p.entrega}</span>
                         <button class="admin-map-btn" onclick="abrirMaps('${p.entrega.replace(/'/g, "\\'")}')">🗺️ Ver mapa</button>
                     </div>
                 </div>
                 
                 <div class="admin-contactos">
                     <div class="contacto">
-                        <i class="fas fa-user"></i> <strong>Remitente:</strong> ${p.remitente}
+                        <i class="fas fa-user"></i>
+                        <strong>Remitente:</strong>
+                        <span>${p.remitente}</span>
                         <a href="tel:${p.tel_remitente}" class="admin-call-btn">📞 ${p.tel_remitente}</a>
                         <a href="https://wa.me/52${p.tel_remitente?.replace(/[^0-9]/g, '')}" target="_blank" class="admin-wa-btn">💬 WhatsApp</a>
                     </div>
                     <div class="contacto">
-                        <i class="fas fa-user"></i> <strong>Destinatario:</strong> ${p.destinatario}
+                        <i class="fas fa-user"></i>
+                        <strong>Destinatario:</strong>
+                        <span>${p.destinatario}</span>
                         <a href="tel:${p.tel_destinatario}" class="admin-call-btn">📞 ${p.tel_destinatario}</a>
                         <a href="https://wa.me/52${p.tel_destinatario?.replace(/[^0-9]/g, '')}" target="_blank" class="admin-wa-btn">💬 WhatsApp</a>
                     </div>
@@ -422,12 +545,18 @@ function suscribirCambios() {
         .subscribe();
 }
 
+// Exponer funciones globales
 window.cambiarPestaña = cambiarPestaña;
 window.logout = logout;
 window.abrirMaps = abrirMaps;
 window.verImagen = verImagen;
 window.toggleEntregados = toggleEntregados;
+window.filtrarPorEstado = filtrarPorEstado;
+window.limpiarFiltro = limpiarFiltro;
+window.cambiarEstadoRepartidor = cambiarEstadoRepartidor;
+window.toggleDocumentos = toggleDocumentos;
 
+// Inicializar
 verificarAutenticacion();
 cargarPedidos();
 iniciarActualizacionAutomatica();
