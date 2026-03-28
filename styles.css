@@ -135,7 +135,7 @@ button:disabled {
   display: none;
 }
 
-/* ========== BOTÓN WHATSAPP FLOTANTE ========== */
+/* ========== BOTÓN WHATSAPP FLOTANTE (ORIGINAL) ========== */
 .wpp-btn {
   position: fixed;
   bottom: 20px;
@@ -186,6 +186,200 @@ input:active, textarea:active {
   transition: all 0.3s ease;
 }
 
+/* ========== SECCIÓN DE INFORMACIÓN ========== */
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.info-header {
+    background: linear-gradient(135deg, #27ae60, #219a52);
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.info-header i {
+    font-size: 18px;
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.info-content {
+    padding: 15px;
+}
+
+.info-content ul {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.info-content ul li {
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #555;
+}
+
+.info-content ul li i {
+    color: #27ae60;
+    font-size: 14px;
+    min-width: 20px;
+    margin-top: 2px;
+}
+
+.info-content ul li strong {
+    color: #333;
+}
+
+/* Pasos */
+.paso {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.paso:hover {
+    background: #e8f5e9;
+    transform: translateX(5px);
+}
+
+.paso-numero {
+    width: 28px;
+    height: 28px;
+    background: #27ae60;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.paso-texto {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.4;
+}
+
+/* Título del formulario */
+.form-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #27ae60;
+    font-weight: bold;
+    font-size: 17px;
+    color: #27ae60;
+}
+
+.form-title i {
+    font-size: 18px;
+}
+
+/* Botón de submit mejorado */
+.submit-btn {
+    background: linear-gradient(135deg, #27ae60, #219a52);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.submit-btn i {
+    font-size: 16px;
+}
+
+.submit-btn:hover {
+    background: linear-gradient(135deg, #219a52, #1e8449);
+}
+
+/* Botones de WhatsApp duales */
+.whatsapp-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.wpp-btn-dual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    width: auto;
+    min-width: 110px;
+}
+
+.wpp-btn-dual i {
+    font-size: 16px;
+}
+
+.wpp-btn-dual.cotizar {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white;
+}
+
+.wpp-btn-dual.ayuda {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.wpp-btn-dual:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+}
+
+.wpp-btn-dual:active {
+    transform: translateY(0);
+}
+
 /* ========== RESPONSIVE PARA MÓVIL ========== */
 @media (max-width: 600px) {
   .app {
@@ -215,11 +409,75 @@ input:active, textarea:active {
     font-size: 10px;
   }
   
+  /* Responsive para la nueva sección */
+  .info-header h3 {
+    font-size: 13px;
+  }
+  
+  .info-header i {
+    font-size: 16px;
+  }
+  
+  .info-content ul li {
+    font-size: 11px;
+  }
+  
+  .paso-texto {
+    font-size: 11px;
+  }
+  
+  .paso-numero {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  
+  .form-title {
+    font-size: 15px;
+  }
+  
+  .form-title i {
+    font-size: 16px;
+  }
+  
+  .whatsapp-buttons {
+    bottom: 15px;
+    right: 15px;
+    gap: 8px;
+  }
+  
+  .wpp-btn-dual {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-width: 85px;
+  }
+  
+  .wpp-btn-dual i {
+    font-size: 12px;
+  }
+  
+  /* Mantener el botón original para compatibilidad */
   .wpp-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 22px;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
     bottom: 15px;
     right: 15px;
   }
+}
+
+/* Animación de entrada */
+.info-card {
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
