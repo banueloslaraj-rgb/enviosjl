@@ -10,14 +10,14 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Variables
-let filtroEstado = null; // Para filtrar por estado al hacer clic en stats
+let filtroEstado = null;
+let intervaloActualizacion = null;
+let pestañaActiva = "pedidos";
+let ultimaCantidadPendientes = 0;
 
 // Elementos del DOM
 const contenedorPedidos = document.getElementById("pedidos");
 const contenedorRepartidores = document.getElementById("repartidores");
-
-// Variable para controlar pestaña activa
-let pestañaActiva = "pedidos";
 
 // 🚪 Cerrar sesión
 function logout() {
@@ -60,28 +60,36 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
+// Mostrar notificación
+function mostrarNotificacion(mensaje, tipo = "info") {
+    const notif = document.createElement("div");
+    notif.textContent = mensaje;
+    notif.style.position = "fixed";
+    notif.style.bottom = "20px";
+    notif.style.right = "20px";
+    notif.style.background = tipo === "error" ? "#dc3545" : "#27ae60";
+    notif.style.color = "white";
+    notif.style.padding = "10px 15px";
+    notif.style.borderRadius = "10px";
+    notif.style.zIndex = "1000";
+    notif.style.animation = "fadeInOut 2s ease";
+    notif.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+    notif.style.fontSize = "13px";
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 2000);
+}
+
 // 🔄 ACTUALIZAR ESTADO DE PEDIDO
 async function actualizarEstadoPedido(id) {
-    console.log("🔴 FUNCIÓN LLAMADA - ID:", id);
-    
-    const selectId = `estado-${id}`;
-    console.log("🔍 Buscando select con ID:", selectId);
-    
-    const selectElement = document.getElementById(selectId);
+    const selectElement = document.getElementById(`estado-${id}`);
     if (!selectElement) {
-        console.error("❌ No se encontró el select para ID:", selectId);
         alert("Error: No se encontró el selector para el pedido");
         return;
     }
     
     const nuevoEstado = selectElement.value;
-    console.log("📊 Nuevo estado seleccionado:", nuevoEstado);
-    
     const confirmar = confirm(`¿Cambiar estado del pedido a "${nuevoEstado}"?`);
-    if (!confirmar) {
-        console.log("❌ Usuario canceló");
-        return;
-    }
+    if (!confirmar) return;
     
     const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoPedido('${id}']`);
     const textoOriginal = btn ? btn.innerText : "Actualizar estado";
@@ -91,24 +99,22 @@ async function actualizarEstadoPedido(id) {
     }
     
     try {
-        const { data, error } = await supabaseClient
+        const { error } = await supabaseClient
             .from("pedidos")
             .update({ estado: nuevoEstado })
-            .eq("id", id)
-            .select();
+            .eq("id", id);
         
         if (error) throw new Error(error.message);
         
-        console.log("✅ Estado actualizado correctamente:", data);
-        alert("✅ Estado actualizado correctamente!");
+        mostrarNotificacion("✅ Estado actualizado correctamente", "info");
         
         setTimeout(() => {
             cargarPedidos();
-        }, 1000);
+        }, 500);
         
     } catch (error) {
         console.error("❌ Error:", error);
-        alert("❌ Error al actualizar: " + error.message);
+        mostrarNotificacion("❌ Error al actualizar: " + error.message, "error");
         if (btn) {
             btn.innerText = textoOriginal;
             btn.disabled = false;
@@ -140,12 +146,95 @@ function limpiarFiltro() {
     cargarPedidos();
 }
 
+// Alternar entregados
+function toggleEntregados() {
+    const container = document.getElementById("entregados-container");
+    const icon = document.getElementById("toggle-icon");
+    if (container) {
+        if (container.style.display === "none") {
+            container.style.display = "block";
+            if (icon) icon.innerHTML = "▲";
+        } else {
+            container.style.display = "none";
+            if (icon) icon.innerHTML = "▼";
+        }
+    }
+}
+
+// Renderizar card de pedido
+function renderizarCardPedido(p) {
+    let fechaFormateada = "Sin fecha";
+    if (p.fecha) {
+        try {
+            const fechaObj = new Date(p.fecha);
+            if (!isNaN(fechaObj.getTime())) {
+                fechaFormateada = fechaObj.toLocaleString('es-MX', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        } catch (e) {}
+    }
+    
+    let imagenesHtml = '';
+    if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
+        imagenesHtml = `
+            <div class="imagenes">
+                <strong>📸 Fotos:</strong>
+                <div class="imagenes-container">
+                    ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy">`).join("")}
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="card ${getEstadoClass(p.estado)}">
+            <div class="pedido-id">
+                🆔 Pedido #${p.id.substring(0, 8)}...
+                <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+            </div>
+            
+            <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion) || "No especificado"}</p>
+            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.recoleccion || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+            
+            <p><strong>📍 Entrega:</strong> ${escapeHtml(p.entrega) || "No especificado"}</p>
+            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.entrega || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+            
+            <p><strong>👤 Envía:</strong> ${escapeHtml(p.remitente) || "No especificado"}</p>
+            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_remitente) || "No disponible"}</p>
+            ${p.tel_remitente ? `<a href="tel:${escapeHtml(p.tel_remitente)}" class="btn-call">📞 Llamar remitente</a>` : ''}
+            
+            <p><strong>👤 Recibe:</strong> ${escapeHtml(p.destinatario) || "No especificado"}</p>
+            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_destinatario) || "No disponible"}</p>
+            ${p.tel_destinatario ? `<a href="tel:${escapeHtml(p.tel_destinatario)}" class="btn-call">📞 Llamar destinatario</a>` : ''}
+            
+            <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion) || "No especificado"}</p>
+            <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio || "0"}</strong></p>
+            <p><strong>🚚 Costo envío:</strong> <strong>${p.envio || "No calculado"}</strong></p>
+            <p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre ? `${escapeHtml(p.repartidor_nombre)} (${escapeHtml(p.repartidor_telefono)})` : "❌ Sin asignar"}</p>
+            <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado || "pendiente")}</p>
+            
+            <select id="estado-${p.id}" style="margin-top: 10px; width:100%; padding:10px; border-radius:8px;">
+                <option value="pendiente" ${p.estado === "pendiente" ? "selected" : ""}>📦 Pendiente</option>
+                <option value="asignado" ${p.estado === "asignado" ? "selected" : ""}>🛵 Asignado</option>
+                <option value="en camino" ${p.estado === "en camino" ? "selected" : ""}>🚚 En camino</option>
+                <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
+            </select>
+            
+            <button onclick="actualizarEstadoPedido('${p.id}')" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
+            
+            ${imagenesHtml}
+        </div>
+    `;
+}
+
 // 📦 Cargar pedidos con filtro
 async function cargarPedidos() {
-    if (!contenedorPedidos) {
-        console.error("Contenedor no encontrado");
-        return;
-    }
+    if (!contenedorPedidos || pestañaActiva !== "pedidos") return;
     
     contenedorPedidos.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
     
@@ -172,22 +261,27 @@ async function cargarPedidos() {
         const enCamino = data.filter(p => p.estado === "en camino");
         const entregados = data.filter(p => p.estado === "entregado");
         
-        // Actualizar estadísticas en las tarjetas
+        // Verificar nuevos pedidos pendientes
+        if (pendientes.length > ultimaCantidadPendientes) {
+            const nuevos = pendientes.length - ultimaCantidadPendientes;
+            mostrarNotificacion(`🔔 ${nuevos} nuevo(s) pedido(s) pendiente(s)`, "info");
+            // Reproducir sonido opcional
+            try {
+                const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
+                audio.volume = 0.2;
+                audio.play();
+            } catch(e) {}
+        }
+        ultimaCantidadPendientes = pendientes.length;
+        
+        // Actualizar estadísticas en las tarjetas originales
         const statCards = document.querySelectorAll('.stat-card');
         if (statCards.length >= 1) {
             const pedidosStat = statCards[0].querySelector('.stat-number');
             if (pedidosStat) pedidosStat.textContent = data.length;
         }
-        if (statCards.length >= 2) {
-            const repartidoresStat = statCards[1].querySelector('.stat-number');
-            // Se actualiza en cargarRepartidores
-        }
-        if (statCards.length >= 3) {
-            const activosStat = statCards[2].querySelector('.stat-number');
-            // Se actualiza en cargarRepartidores
-        }
         
-        // Agregar estadísticas rápidas con filtros clickeables
+        // Stats con filtros clickeables
         const statsHtml = `
             <div class="stats-filtros">
                 <div class="stat-filtro pendiente-filtro" onclick="filtrarPorEstado('pendiente')">
@@ -294,95 +388,9 @@ async function cargarPedidos() {
     }
 }
 
-// Renderizar card de pedido
-function renderizarCardPedido(p) {
-    let fechaFormateada = "Sin fecha";
-    if (p.fecha) {
-        try {
-            const fechaObj = new Date(p.fecha);
-            if (!isNaN(fechaObj.getTime())) {
-                fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-        } catch (e) {}
-    }
-    
-    let imagenesHtml = '';
-    if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
-        imagenesHtml = `
-            <div class="imagenes">
-                <strong>📸 Fotos:</strong>
-                <div class="imagenes-container">
-                    ${p.fotos.map(f => `<img src="${f}" onclick="window.open('${f}','_blank')" loading="lazy">`).join("")}
-                </div>
-            </div>
-        `;
-    }
-    
-    return `
-        <div class="card ${getEstadoClass(p.estado)}">
-            <div class="pedido-id">
-                🆔 Pedido #${p.id.substring(0, 8)}...
-                <span class="pedido-fecha">📅 ${fechaFormateada}</span>
-            </div>
-            
-            <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion) || "No especificado"}</p>
-            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.recoleccion || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-            
-            <p><strong>📍 Entrega:</strong> ${escapeHtml(p.entrega) || "No especificado"}</p>
-            <button class="map-btn" onclick="abrirMaps('${escapeHtml(p.entrega || "").replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-            
-            <p><strong>👤 Envía:</strong> ${escapeHtml(p.remitente) || "No especificado"}</p>
-            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_remitente) || "No disponible"}</p>
-            ${p.tel_remitente ? `<a href="tel:${escapeHtml(p.tel_remitente)}" class="btn-call">📞 Llamar remitente</a>` : ''}
-            
-            <p><strong>👤 Recibe:</strong> ${escapeHtml(p.destinatario) || "No especificado"}</p>
-            <p><strong>📞 Tel:</strong> ${escapeHtml(p.tel_destinatario) || "No disponible"}</p>
-            ${p.tel_destinatario ? `<a href="tel:${escapeHtml(p.tel_destinatario)}" class="btn-call">📞 Llamar destinatario</a>` : ''}
-            
-            <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion) || "No especificado"}</p>
-            <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio || "0"}</strong></p>
-            <p><strong>🚚 Costo envío:</strong> <strong>${p.envio || "No calculado"}</strong></p>
-            <p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre ? `${escapeHtml(p.repartidor_nombre)} (${escapeHtml(p.repartidor_telefono)})` : "❌ Sin asignar"}</p>
-            <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado || "pendiente")}</p>
-            
-            <select id="estado-${p.id}" style="margin-top: 10px; width:100%; padding:10px; border-radius:8px;">
-                <option value="pendiente" ${p.estado === "pendiente" ? "selected" : ""}>📦 Pendiente</option>
-                <option value="asignado" ${p.estado === "asignado" ? "selected" : ""}>🛵 Asignado</option>
-                <option value="en camino" ${p.estado === "en camino" ? "selected" : ""}>🚚 En camino</option>
-                <option value="entregado" ${p.estado === "entregado" ? "selected" : ""}>✅ Entregado</option>
-            </select>
-            
-            <button onclick="actualizarEstadoPedido('${p.id}')" style="margin-top: 5px; width:100%;">🔄 Actualizar estado</button>
-            
-            ${imagenesHtml}
-        </div>
-    `;
-}
-
-// Alternar entregados
-function toggleEntregados() {
-    const container = document.getElementById("entregados-container");
-    const icon = document.getElementById("toggle-icon");
-    if (container) {
-        if (container.style.display === "none") {
-            container.style.display = "block";
-            if (icon) icon.innerHTML = "▲";
-        } else {
-            container.style.display = "none";
-            if (icon) icon.innerHTML = "▼";
-        }
-    }
-}
-
-// 🛵 Cargar repartidores (mantener tu versión original)
+// 🛵 Cargar repartidores
 async function cargarRepartidores() {
-    if (!contenedorRepartidores) return;
+    if (!contenedorRepartidores || pestañaActiva !== "repartidores") return;
     
     contenedorRepartidores.innerHTML = '<div class="loader">🔄 Cargando repartidores...</div>';
     
@@ -543,7 +551,7 @@ async function actualizarEstadoRepartidor(id) {
         }, 2000);
         
     } catch (error) {
-        alert("❌ Error al actualizar estado");
+        mostrarNotificacion("❌ Error al actualizar estado", "error");
         btn.innerText = textoOriginal;
         btn.disabled = false;
     }
@@ -628,24 +636,6 @@ function cambiarPestaña(pestaña) {
     }
 }
 
-// 🔔 Mostrar notificación
-function mostrarNotificacion(mensaje) {
-    const notif = document.createElement("div");
-    notif.textContent = mensaje;
-    notif.style.position = "fixed";
-    notif.style.bottom = "20px";
-    notif.style.right = "20px";
-    notif.style.background = "#27ae60";
-    notif.style.color = "white";
-    notif.style.padding = "10px 15px";
-    notif.style.borderRadius = "10px";
-    notif.style.zIndex = "1000";
-    notif.style.animation = "fadeInOut 2s ease";
-    notif.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 2000);
-}
-
 // 📊 Estadísticas rápidas (original)
 async function cargarEstadisticas() {
     const { count: pedidosCount } = await supabaseClient
@@ -687,28 +677,59 @@ async function cargarEstadisticas() {
     }
 }
 
-// Escuchar cambios en tiempo real
-supabaseClient
-    .channel("admin-pedidos")
-    .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, () => {
-        if (pestañaActiva === "pedidos") cargarPedidos();
-        mostrarNotificacion("📦 Lista de pedidos actualizada");
-    })
-    .subscribe();
+// 🚀 Iniciar actualización automática
+function iniciarActualizacionAutomatica() {
+    // Actualizar cada 10 segundos
+    intervaloActualizacion = setInterval(() => {
+        if (pestañaActiva === "pedidos") {
+            cargarPedidos();
+        } else if (pestañaActiva === "repartidores") {
+            cargarRepartidores();
+        }
+    }, 10000);
+    
+    // Actualizar al volver a la pestaña
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            if (pestañaActiva === "pedidos") {
+                cargarPedidos();
+            } else if (pestañaActiva === "repartidores") {
+                cargarRepartidores();
+            }
+        }
+    });
+}
 
-supabaseClient
-    .channel("admin-repartidores")
-    .on("postgres_changes", { event: "*", schema: "public", table: "repartidores" }, () => {
-        if (pestañaActiva === "repartidores") cargarRepartidores();
-        mostrarNotificacion("🛵 Lista de repartidores actualizada");
-    })
-    .subscribe();
+// Escuchar cambios en tiempo real con Supabase
+function suscribirCambios() {
+    supabaseClient
+        .channel("admin-pedidos")
+        .on("postgres_changes", { event: "*", schema: "public", table: "pedidos" }, (payload) => {
+            if (pestañaActiva === "pedidos") {
+                cargarPedidos();
+                mostrarNotificacion("📦 Lista de pedidos actualizada", "info");
+            }
+        })
+        .subscribe();
+    
+    supabaseClient
+        .channel("admin-repartidores")
+        .on("postgres_changes", { event: "*", schema: "public", table: "repartidores" }, () => {
+            if (pestañaActiva === "repartidores") {
+                cargarRepartidores();
+                mostrarNotificacion("🛵 Lista de repartidores actualizada", "info");
+            }
+        })
+        .subscribe();
+}
 
 // 🚀 Inicializar
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🚀 Panel admin iniciado");
+    console.log("🚀 Panel admin iniciado con actualización automática");
     cargarEstadisticas();
     cargarPedidos();
+    iniciarActualizacionAutomatica();
+    suscribirCambios();
 });
 
 // Exponer funciones globalmente
