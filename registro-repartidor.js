@@ -1,7 +1,8 @@
+// 🔥 CONEXIÓN SUPABASE - Solo una vez
 const SUPABASE_URL = "https://pknqqaxiqdllsygjctmb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrbnFxYXhpcWRsbHN5Z2pjdG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDY0MDEsImV4cCI6MjA5MDEyMjQwMX0.o3XrQk2xgN7F9qfHVVg1Ixz5ZYPQ_edZe9-jAENgiTc";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let isSubmitting = false;
 
 // Generar código de 6 dígitos
@@ -21,7 +22,7 @@ async function subirArchivo(file, carpeta, nombreArchivo) {
     const fileName = `${carpeta}/${Date.now()}-${nombreArchivo}.${extension}`;
     
     try {
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabaseClient.storage
             .from("repartidores")
             .upload(fileName, file, {
                 cacheControl: '3600',
@@ -35,7 +36,7 @@ async function subirArchivo(file, carpeta, nombreArchivo) {
         
         console.log(`✅ Archivo subido: ${fileName}`);
         
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseClient.storage
             .from("repartidores")
             .getPublicUrl(fileName);
         
@@ -124,7 +125,7 @@ function setupFileInputs() {
         { id: 'fotoPlacas', label: 'Foto placas' }
     ];
     
-    inputs.forEach(({ id, label }) => {
+    inputs.forEach(({ id }) => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('change', function() {
@@ -174,7 +175,7 @@ form.addEventListener('submit', async (e) => {
         const marcaVehiculo = document.getElementById('marcaVehiculo').value.trim();
         const colorVehiculo = document.getElementById('colorVehiculo').value.trim();
         
-        console.log("📝 Datos del repartidor:", { nombre, telefono, email, marcaVehiculo, colorVehiculo });
+        console.log("📝 Datos:", { nombre, telefono, email, marcaVehiculo, colorVehiculo });
         
         // Validaciones
         if (!nombre) throw new Error("👤 Nombre completo requerido");
@@ -191,15 +192,6 @@ form.addEventListener('submit', async (e) => {
         const fotoVehiculo = document.getElementById('fotoVehiculo').files[0];
         const fotoPlacas = document.getElementById('fotoPlacas').files[0];
         
-        console.log("📁 Archivos:", {
-            credFrente: credFrente?.name,
-            credReverso: credReverso?.name,
-            comprobante: comprobante?.name,
-            licencia: licencia?.name,
-            fotoVehiculo: fotoVehiculo?.name,
-            fotoPlacas: fotoPlacas?.name
-        });
-        
         // Validar archivos requeridos
         if (!credFrente) throw new Error("🪪 Credencial (Frente) es requerida");
         if (!credReverso) throw new Error("🪪 Credencial (Reverso) es requerida");
@@ -208,62 +200,35 @@ form.addEventListener('submit', async (e) => {
         if (!fotoPlacas) throw new Error("🔢 Foto de placas requerida");
         
         mostrarMensaje("📤 Subiendo documentos...", "info");
-        submitBtn.textContent = "⏳ Subiendo documentos (0/6)...";
         
-        // Subir archivos uno por uno para mejor control
-        let subidas = 0;
+        // Subir archivos
+        const [urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac] = await Promise.all([
+            subirArchivo(credFrente, 'credenciales', `frente_${telefono}`),
+            subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`),
+            subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`),
+            licencia ? subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : Promise.resolve(null),
+            subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`),
+            subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`)
+        ]);
         
-        const urlFrente = await subirArchivo(credFrente, 'credenciales', `frente_${telefono}`);
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        const urlReverso = await subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`);
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        const urlComprobante = await subirArchivo(comprobante, 'comprobantes', `domicilio_${telefono}`);
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        const urlLicencia = licencia ? await subirArchivo(licencia, 'licencias', `licencia_${telefono}`) : null;
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        const urlFotoVehi = await subirArchivo(fotoVehiculo, 'vehiculos', `vehiculo_${telefono}`);
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        const urlFotoPlac = await subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`);
-        subidas++;
-        submitBtn.textContent = `⏳ Subiendo documentos (${subidas}/6)...`;
-        
-        console.log("📸 URLs obtenidas:", {
-            urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac
-        });
-        
-        // Verificar que los archivos requeridos se subieron correctamente
+        // Verificar archivos requeridos
         if (!urlFrente) throw new Error("❌ Error al subir credencial frente");
         if (!urlReverso) throw new Error("❌ Error al subir credencial reverso");
-        if (!urlComprobante) throw new Error("❌ Error al subir comprobante de domicilio");
-        if (!urlFotoVehi) throw new Error("❌ Error al subir foto del vehículo");
-        if (!urlFotoPlac) throw new Error("❌ Error al subir foto de placas");
+        if (!urlComprobante) throw new Error("❌ Error al subir comprobante");
+        if (!urlFotoVehi) throw new Error("❌ Error al subir foto vehículo");
+        if (!urlFotoPlac) throw new Error("❌ Error al subir foto placas");
         
         // Generar código único
-        submitBtn.textContent = "⏳ Generando código...";
         let codigo = generarCodigo();
         let esUnico = false;
         let intentos = 0;
         
-        console.log("🔑 Generando código único...");
-        
         while (!esUnico && intentos < 10) {
-            const { data: existe, error: searchError } = await supabase
+            const { data: existe } = await supabaseClient
                 .from("repartidores")
                 .select("codigo")
                 .eq("codigo", codigo)
                 .single();
-            
-            console.log(`Intento ${intentos + 1}: código ${codigo}, existe: ${!!existe}`);
             
             if (!existe) {
                 esUnico = true;
@@ -273,11 +238,7 @@ form.addEventListener('submit', async (e) => {
             }
         }
         
-        console.log("✅ Código final:", codigo);
-        
         // Crear registro
-        submitBtn.textContent = "⏳ Guardando registro...";
-        
         const datosRepartidor = {
             nombre_completo: nombre,
             telefono: telefono,
@@ -295,21 +256,15 @@ form.addEventListener('submit', async (e) => {
             fecha_registro: new Date().toISOString()
         };
         
-        console.log("💾 Insertando en Supabase:", datosRepartidor);
-        
-        const { data: insertData, error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
             .from("repartidores")
-            .insert([datosRepartidor])
-            .select();
+            .insert([datosRepartidor]);
         
         if (insertError) {
-            console.error("❌ Error insert:", insertError);
             throw new Error(insertError.message);
         }
         
-        console.log("✅ Registro exitoso:", insertData);
-        
-        // Mostrar código al usuario
+        // Mostrar código
         const mensajeDiv = document.getElementById('mensaje');
         mensajeDiv.innerHTML = `
             ✅ ¡Registro exitoso!<br><br>
@@ -321,30 +276,23 @@ form.addEventListener('submit', async (e) => {
         mensajeDiv.className = 'success';
         mensajeDiv.style.display = 'block';
         
-        // Enviar WhatsApp al repartidor
-        submitBtn.textContent = "⏳ Enviando WhatsApp...";
+        // Enviar WhatsApps
         await enviarWhatsAppRepartidor(telefono, nombre, codigo);
-        
-        // Enviar WhatsApp al administrador
         await enviarWhatsAppAdmin(datosRepartidor, codigo);
         
         // Limpiar formulario
         form.reset();
-        
-        // Limpiar nombres de archivos mostrados
         document.querySelectorAll('.file-name').forEach(span => span.remove());
         
         submitBtn.textContent = "✅ Registro completo!";
         
-        console.log("🎉 Proceso completado, redirigiendo...");
-        
-        // Redirigir después de 5 segundos
+        // Redirigir
         setTimeout(() => {
             window.location.href = 'login-repartidor.html';
         }, 5000);
         
     } catch (error) {
-        console.error("❌ Error completo:", error);
+        console.error("❌ Error:", error);
         mostrarMensaje(`❌ ${error.message}`, "error");
         
         isSubmitting = false;
@@ -356,4 +304,4 @@ form.addEventListener('submit', async (e) => {
 // Inicializar
 setupFileInputs();
 
-console.log("🚀 Página de registro de repartidores lista");
+console.log("🚀 Página de registro lista");
