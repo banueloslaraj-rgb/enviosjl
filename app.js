@@ -273,11 +273,6 @@ async function diagnosticarSupabase() {
             } else {
                 console.error("❌❌❌ Bucket 'fotos' NO EXISTE");
                 console.error("   🔴 SOLUCIÓN: Debes crearlo en Supabase Dashboard > Storage");
-                console.error("   1. Ve a https://supabase.com/dashboard");
-                console.error("   2. Selecciona tu proyecto");
-                console.error("   3. Ve a Storage > Create new bucket");
-                console.error("   4. Nombre: 'fotos'");
-                console.error("   5. Marca 'Public bucket'");
             }
         }
     } catch (err) {
@@ -305,7 +300,6 @@ async function diagnosticarSupabase() {
                 console.error("   🔴 SOLUCIÓN: Crea el bucket 'fotos' en Supabase como se indicó arriba");
             } else if (error.message.includes("permission denied")) {
                 console.error("   🔴 SOLUCIÓN: Verifica las políticas de seguridad del bucket");
-                console.error("   Debes agregar una política que permita INSERT a anon");
             } else if (error.message.includes("JWT")) {
                 console.error("   🔴 SOLUCIÓN: La clave de API puede ser incorrecta o expiró");
             }
@@ -329,6 +323,106 @@ async function diagnosticarSupabase() {
     }
     
     console.log("\n🔍 ========== FIN DIAGNÓSTICO ==========");
+}
+
+// FUNCIÓN DE PRUEBA CON IMAGEN REAL
+async function probarSubidaImagen() {
+    console.log("🧪 ========== PROBANDO SUBIDA DE IMAGEN REAL ==========");
+    
+    // Crear una imagen de prueba en memoria (un cuadrado rojo)
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText('Test', 30, 50);
+    
+    // Convertir canvas a blob
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const testFile = new File([blob], 'test_image.png', { type: 'image/png' });
+    
+    console.log("📸 Imagen de prueba creada:");
+    console.log("   - Nombre:", testFile.name);
+    console.log("   - Tipo:", testFile.type);
+    console.log("   - Tamaño:", (testFile.size / 1024).toFixed(2), "KB");
+    
+    // Probar subida
+    const timestamp = Date.now();
+    const fileName = `test_imagen_${timestamp}.png`;
+    
+    console.log("📤 Subiendo a Supabase...");
+    console.log("   - Bucket: fotos");
+    console.log("   - Archivo:", fileName);
+    
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from("fotos")
+            .upload(fileName, testFile, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: 'image/png'
+            });
+        
+        if (error) {
+            console.error("❌ ERROR EN SUBIDA:");
+            console.error("   - Mensaje:", error.message);
+            console.error("   - Status:", error.statusCode);
+            console.error("   - Error completo:", error);
+            
+            // Mostrar sugerencias según el error
+            if (error.message.includes("permission")) {
+                console.error("🔴 SOLUCIÓN: Problema de permisos. Verifica las políticas del bucket.");
+                console.error("   En Supabase Dashboard > Storage > fotos > Policies");
+                console.error("   Asegúrate de tener políticas que permitan INSERT y SELECT para anon");
+            } else if (error.message.includes("row-level security")) {
+                console.error("🔴 SOLUCIÓN: Error de RLS. Debes crear políticas de seguridad.");
+            } else if (error.message.includes("JWT")) {
+                console.error("🔴 SOLUCIÓN: Problema con la clave API. Verifica que sea correcta.");
+            }
+        } else {
+            console.log("✅ SUBIDA EXITOSA!");
+            console.log("   - Path:", data.path);
+            
+            // Obtener URL pública
+            const { data: urlData } = supabaseClient.storage
+                .from("fotos")
+                .getPublicUrl(fileName);
+            
+            console.log("   - URL pública:", urlData.publicUrl);
+            
+            // Intentar acceder a la URL
+            try {
+                const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
+                if (response.ok) {
+                    console.log("   - ✅ URL accesible!");
+                } else {
+                    console.log("   - ⚠️ URL generada pero no accesible (status:", response.status, ")");
+                }
+            } catch (err) {
+                console.log("   - ⚠️ No se pudo verificar URL:", err.message);
+            }
+            
+            // Limpiar archivo de prueba
+            console.log("🧹 Eliminando archivo de prueba...");
+            const { error: removeError } = await supabaseClient.storage
+                .from("fotos")
+                .remove([fileName]);
+            
+            if (removeError) {
+                console.warn("   ⚠️ No se pudo eliminar:", removeError.message);
+            } else {
+                console.log("   ✅ Archivo de prueba eliminado");
+            }
+        }
+    } catch (err) {
+        console.error("❌ EXCEPCIÓN:", err);
+        console.error("   Stack:", err.stack);
+    }
+    
+    console.log("🧪 ========== FIN PRUEBA ==========");
 }
 
 // Configurar evento del campo pago
@@ -543,3 +637,8 @@ setTimeout(() => {
     console.log("🚀 App de pedidos lista");
     diagnosticarSupabase();
 }, 1000);
+
+// Exponer función de prueba en consola
+window.probarSubidaImagen = probarSubidaImagen;
+
+console.log("✅ App lista. Escribe 'probarSubidaImagen()' en la consola para probar la subida de imágenes");
