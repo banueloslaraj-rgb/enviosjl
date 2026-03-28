@@ -3,67 +3,110 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Variables globales
+let repartidorId = null;
+let repartidorNombre = null;
+let repartidorTelefono = null;
+let filtroActual = "todos";
+let intervaloActualizacion = null;
+let ultimaCantidadPedidos = 0;
+let notificacionesActivas = true;
+
+// Elementos DOM
 const contenedor = document.getElementById("pedidos");
+const nombreRepartidorSpan = document.getElementById("nombreRepartidor");
+const connectionStatusSpan = document.getElementById("connection-status");
+const lastUpdateSpan = document.getElementById("last-update");
+const pendientesCountSpan = document.getElementById("pendientes-count");
 
 // Obtener datos del repartidor desde localStorage
-const repartidorId = localStorage.getItem("repartidor_id");
-const repartidorNombre = localStorage.getItem("repartidor_nombre");
-const repartidorTelefono = localStorage.getItem("repartidor_telefono");
+repartidorId = localStorage.getItem("repartidor_id");
+repartidorNombre = localStorage.getItem("repartidor_nombre");
+repartidorTelefono = localStorage.getItem("repartidor_telefono");
 
 // Verificar si está logueado
 if (!repartidorId || !repartidorNombre) {
     window.location.href = "login-repartidor.html";
 }
 
-// Mostrar nombre del repartidor en el header
-const nombreRepartidorSpan = document.getElementById("nombreRepartidor");
+// Mostrar nombre del repartidor
 if (nombreRepartidorSpan) {
     nombreRepartidorSpan.textContent = repartidorNombre;
 }
 
-function cerrarSesion() {
-    if (confirm("¿Seguro que quieres cerrar sesión?")) {
-        localStorage.removeItem("repartidor_id");
-        localStorage.removeItem("repartidor_nombre");
-        localStorage.removeItem("repartidor_telefono");
-        localStorage.removeItem("repartidor_codigo");
-        window.location.href = "login-repartidor.html";
+// Formatear fecha local
+function formatearFechaLocal(fechaISO) {
+    if (!fechaISO) return "Sin fecha";
+    const fecha = new Date(fechaISO);
+    return fecha.toLocaleString('es-MX', {
+        timeZone: 'America/Mexico_City',
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Mostrar notificación
+function mostrarNotificacion(mensaje, tipo = "info") {
+    if (!notificacionesActivas) return;
+    
+    const notification = document.getElementById("notification");
+    const messageSpan = document.getElementById("notification-message");
+    
+    messageSpan.textContent = mensaje;
+    notification.classList.remove("hidden");
+    
+    const colors = {
+        info: "#27ae60",
+        warning: "#f39c12",
+        error: "#e74c3c"
+    };
+    notification.style.backgroundColor = colors[tipo] || colors.info;
+    
+    setTimeout(() => {
+        notification.classList.add("hidden");
+    }, 3000);
+}
+
+// Actualizar estado de conexión
+function actualizarEstadoConexion(online) {
+    if (connectionStatusSpan) {
+        if (online) {
+            connectionStatusSpan.innerHTML = '<i class="fas fa-circle"></i> Conectado';
+            connectionStatusSpan.classList.remove("offline");
+            connectionStatusSpan.classList.add("online");
+        } else {
+            connectionStatusSpan.innerHTML = '<i class="fas fa-circle"></i> Sin conexión';
+            connectionStatusSpan.classList.remove("online");
+            connectionStatusSpan.classList.add("offline");
+        }
     }
 }
 
-// Función para abrir WhatsApp - VERSIÓN MEJORADA PARA TODOS LOS DISPOSITIVOS
+// Actualizar timestamp
+function actualizarTimestamp() {
+    if (lastUpdateSpan) {
+        const ahora = new Date();
+        lastUpdateSpan.textContent = ahora.toLocaleTimeString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+}
+
+// Función para abrir WhatsApp
 function abrirWhatsApp(telefono, mensaje) {
-    if (!telefono) {
-        console.log("⚠️ No hay teléfono para enviar mensaje");
-        return false;
-    }
-    
-    // Limpiar el teléfono (solo números)
+    if (!telefono) return false;
     const telefonoLimpio = telefono.replace(/[^0-9]/g, '');
-    // Asegurar que tiene 10 dígitos
-    if (telefonoLimpio.length !== 10) {
-        console.log("⚠️ Teléfono no tiene 10 dígitos:", telefonoLimpio);
-    }
-    
     const url = `https://wa.me/52${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
-    console.log("📱 Abriendo WhatsApp:", url);
-    
-    // Usar window.location.href en lugar de window.open para mejor compatibilidad
     window.location.href = url;
     return true;
 }
 
-// Función para abrir WhatsApp del administrador
-function abrirWhatsAppAdmin(mensaje) {
-    const adminWhatsApp = "5213111063251";
-    const url = `https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-    console.log("📱 Abriendo WhatsApp Admin:", url);
-    window.location.href = url;
-}
-
-// Mostrar mensaje temporal al repartidor
+// Mostrar mensaje temporal
 function mostrarMensajeRepartidor(texto, esExito = true) {
-    // Crear elemento de mensaje flotante
     const mensajeDiv = document.createElement("div");
     mensajeDiv.textContent = texto;
     mensajeDiv.style.position = "fixed";
@@ -80,166 +123,32 @@ function mostrarMensajeRepartidor(texto, esExito = true) {
     mensajeDiv.style.textAlign = "center";
     document.body.appendChild(mensajeDiv);
     
-    setTimeout(() => {
-        mensajeDiv.remove();
-    }, 3000);
+    setTimeout(() => mensajeDiv.remove(), 3000);
 }
 
-async function cargarPedidos() {
-    if (!contenedor) return;
-    
-    contenedor.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
-
-    const { data, error } = await supabaseClient
-        .from("pedidos")
-        .select("*")
-        .order("fecha", { ascending: false });
-
-    if (error) {
-        contenedor.innerHTML = '<div style="color:red; text-align:center;">❌ Error al cargar pedidos</div>';
-        return;
-    }
-
-    contenedor.innerHTML = "";
-
-    if (!data || data.length === 0) {
-        contenedor.innerHTML = '<div style="text-align:center; padding:20px;">📭 No hay pedidos disponibles</div>';
-        return;
-    }
-
-    data.forEach(p => {
-        // Mostrar pedidos pendientes o asignados a este repartidor
-        if (p.estado === "pendiente" || p.repartidor_id === repartidorId) {
-
-            const card = document.createElement("div");
-            card.className = "card";
-            
-            if (p.estado === "pendiente") {
-                card.classList.add("estado-pendiente");
-            } else if (p.estado === "asignado") {
-                card.classList.add("estado-asignado");
-            } else if (p.estado === "en camino") {
-                card.classList.add("estado-en-camino");
-            } else if (p.estado === "entregado") {
-                card.classList.add("estado-entregado");
-            }
-
-            let fechaFormateada = "Sin fecha";
-            if (p.fecha) {
-                const fechaObj = new Date(p.fecha);
-                fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-
-            let imagenesHtml = '';
-            if (p.fotos && p.fotos.length > 0) {
-                imagenesHtml = `
-                    <div class="imagenes">
-                        <strong>📸 Fotos del pedido:</strong>
-                        <div class="imagenes-container">
-                            ${p.fotos.map(f => `<img src="${f}" onclick="verImagen('${f}')" loading="lazy">`).join("")}
-                        </div>
-                    </div>
-                `;
-            }
-
-            card.innerHTML = `
-                <div class="pedido-header">
-                    <strong>🆔 Pedido #${p.id.substring(0, 8)}...</strong>
-                    <span class="pedido-fecha">📅 ${fechaFormateada}</span>
-                </div>
-                
-                <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
-                <button class="map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-
-                <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
-                <button class="map-btn" onclick="abrirMaps('${p.entrega.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
-
-                <p><strong>👤 Envía:</strong> ${p.remitente}</p>
-                <p><strong>📞 Tel (Remitente):</strong> ${p.tel_remitente || "No disponible"}</p>
-                <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar al remitente</a>
-
-                <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
-                <p><strong>📞 Tel (Destinatario):</strong> ${p.tel_destinatario || "No disponible"}</p>
-                <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar al destinatario</a>
-
-                <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
-                <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
-                <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
-                <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
-                ${p.repartidor_nombre ? `<p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre} (${p.repartidor_telefono})</p>` : ''}
-                ${imagenesHtml}
-            `;
-
-            const btnContainer = document.createElement("div");
-            btnContainer.className = "botones-accion";
-
-            if (p.estado === "pendiente") {
-                const btnAceptar = document.createElement("button");
-                btnAceptar.textContent = "✅ Aceptar pedido";
-                btnAceptar.onclick = () => aceptarPedido(p.id, p.tel_remitente, p.remitente, p.recoleccion);
-                btnAceptar.style.background = "#28a745";
-                btnContainer.appendChild(btnAceptar);
-            }
-
-            if (p.repartidor_id === repartidorId && p.estado === "asignado") {
-                const btnEnCamino = document.createElement("button");
-                btnEnCamino.textContent = "🚚 En camino (recogido)";
-                btnEnCamino.onclick = () => cambiarEstadoEnCamino(p.id, p.tel_destinatario, p.destinatario, p.entrega);
-                btnEnCamino.style.background = "#17a2b8";
-                
-                const btnEntregado = document.createElement("button");
-                btnEntregado.textContent = "✅ Entregado";
-                btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
-                btnEntregado.style.background = "#6c757d";
-                
-                btnContainer.appendChild(btnEnCamino);
-                btnContainer.appendChild(btnEntregado);
-            }
-
-            if (p.repartidor_id === repartidorId && p.estado === "en camino") {
-                const btnEntregado = document.createElement("button");
-                btnEntregado.textContent = "✅ Marcar como entregado";
-                btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
-                btnEntregado.style.background = "#28a745";
-                btnContainer.appendChild(btnEntregado);
-            }
-
-            if (btnContainer.children.length > 0) {
-                card.appendChild(btnContainer);
-            }
-
-            contenedor.appendChild(card);
-        }
-    });
-}
-
-// 1. ACEPTAR PEDIDO - Mensaje al REMITENTE
+// Aceptar pedido
 async function aceptarPedido(id, telefonoRemitente, nombreRemitente, direccionRecoleccion) {
-    if (!repartidorId) {
-        mostrarMensajeRepartidor("⚠️ Error de sesión. Inicia sesión nuevamente.", false);
-        window.location.href = "login-repartidor.html";
-        return;
-    }
-
     const btn = event.target;
     const textoOriginal = btn.textContent;
     btn.textContent = "⏳ Procesando...";
     btn.disabled = true;
 
     try {
-        // Obtener datos del pedido
         const { data: pedido } = await supabaseClient
             .from("pedidos")
             .select("*")
             .eq("id", id)
             .single();
         
-        // Actualizar pedido con datos del repartidor
+        // Verificar que sigue disponible
+        if (pedido.estado !== "pendiente") {
+            mostrarMensajeRepartidor("⚠️ Este pedido ya fue aceptado por otro repartidor", false);
+            btn.textContent = textoOriginal;
+            btn.disabled = false;
+            cargarPedidos();
+            return;
+        }
+        
         const { error } = await supabaseClient
             .from("pedidos")
             .update({ 
@@ -252,67 +161,35 @@ async function aceptarPedido(id, telefonoRemitente, nombreRemitente, direccionRe
         
         if (error) throw error;
         
-        // Mensaje para el REMITENTE
         const mensajeRemitente = `🚚 *PEDIDO ACEPTADO* 🚚
 
-Hola ${nombreRemitente}, tu pedido ha sido aceptado por un repartidor.
+Hola ${nombreRemitente}, tu pedido ha sido aceptado.
 
-🛵 *Repartidor asignado:*
-👤 Nombre: ${repartidorNombre}
-📞 Teléfono: ${repartidorTelefono}
+🛵 *Repartidor:* ${repartidorNombre}
+📞 *Teléfono:* ${repartidorTelefono}
 
-📍 *El repartidor está en camino a la dirección de recolección:*
-${direccionRecoleccion}
+📍 *Recolección:* ${direccionRecoleccion}
 
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-
-El repartidor llegará pronto para recoger tu paquete.`;
+🆔 Pedido #${pedido.id.substring(0, 8)}...`;
         
-        // Mensaje para el administrador
-        const mensajeAdmin = `🛵 *PEDIDO ACEPTADO* 🛵
-
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-👤 Remitente: ${nombreRemitente} (${telefonoRemitente})
-
-🛵 Repartidor:
-👤 ${repartidorNombre}
-📞 ${repartidorTelefono}
-
-📍 Recolección: ${direccionRecoleccion}
-📍 Entrega: ${pedido.entrega}
-
-El repartidor está en camino a la recolección.`;
-        
-        mostrarMensajeRepartidor("✅ Pedido aceptado. Abriendo WhatsApp...");
-        
-        // Recargar pedidos primero
+        mostrarMensajeRepartidor("✅ Pedido aceptado");
         await cargarPedidos();
         
-        // Abrir WhatsApp del REMITENTE después de un pequeño delay
         setTimeout(() => {
-            if (telefonoRemitente) {
-                abrirWhatsApp(telefonoRemitente, mensajeRemitente);
-            }
+            if (telefonoRemitente) abrirWhatsApp(telefonoRemitente, mensajeRemitente);
         }, 500);
-        
-        // Abrir WhatsApp del administrador en nueva pestaña (para no perder la del repartidor)
-        setTimeout(() => {
-            const adminUrl = `https://wa.me/5213111063251?text=${encodeURIComponent(mensajeAdmin)}`;
-            window.open(adminUrl, '_blank');
-        }, 800);
         
         btn.textContent = textoOriginal;
         btn.disabled = false;
         
     } catch (error) {
-        console.error("Error:", error);
-        mostrarMensajeRepartidor("❌ Error al aceptar pedido: " + error.message, false);
+        mostrarMensajeRepartidor("❌ Error: " + error.message, false);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
 }
 
-// 2. EN CAMINO - Mensaje al DESTINATARIO
+// En camino
 async function cambiarEstadoEnCamino(id, telefonoDestinatario, nombreDestinatario, direccionEntrega) {
     const btn = event.target;
     const textoOriginal = btn.textContent;
@@ -320,7 +197,6 @@ async function cambiarEstadoEnCamino(id, telefonoDestinatario, nombreDestinatari
     btn.disabled = true;
 
     try {
-        // Obtener datos del pedido
         const { data: pedido } = await supabaseClient
             .from("pedidos")
             .select("*")
@@ -332,59 +208,34 @@ async function cambiarEstadoEnCamino(id, telefonoDestinatario, nombreDestinatari
             .update({ estado: "en camino" })
             .eq("id", id);
         
-        // Mensaje para el DESTINATARIO
         const mensajeDestinatario = `🚚 *PEDIDO EN CAMINO* 🚚
 
-Hola ${nombreDestinatario}, tu pedido ya está en camino hacia tu domicilio.
+Hola ${nombreDestinatario}, tu pedido está en camino.
 
 🛵 Repartidor: ${repartidorNombre} (${repartidorTelefono})
 
-📍 Dirección de entrega:
-${direccionEntrega}
+📍 Entrega: ${direccionEntrega}
 
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-📦 Descripción: ${pedido.descripcion}
-
-El repartidor llegará pronto. Por favor, estate atento.`;
+El repartidor llegará pronto.`;
         
-        // Mensaje para el administrador
-        const mensajeAdmin = `🚚 *PEDIDO EN CAMINO* 🚚
-
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-👤 Destinatario: ${nombreDestinatario} (${telefonoDestinatario})
-🛵 Repartidor: ${repartidorNombre}
-
-El repartidor ya recogió el paquete y está en camino a la entrega.`;
-        
-        mostrarMensajeRepartidor("✅ Pedido marcado como 'En camino'. Abriendo WhatsApp...");
-        
-        // Recargar pedidos
+        mostrarMensajeRepartidor("✅ Marcado como En camino");
         await cargarPedidos();
         
-        // Abrir WhatsApp del DESTINATARIO
         setTimeout(() => {
-            if (telefonoDestinatario) {
-                abrirWhatsApp(telefonoDestinatario, mensajeDestinatario);
-            }
+            if (telefonoDestinatario) abrirWhatsApp(telefonoDestinatario, mensajeDestinatario);
         }, 500);
-        
-        // Abrir WhatsApp del administrador
-        setTimeout(() => {
-            const adminUrl = `https://wa.me/5213111063251?text=${encodeURIComponent(mensajeAdmin)}`;
-            window.open(adminUrl, '_blank');
-        }, 800);
         
         btn.textContent = textoOriginal;
         btn.disabled = false;
         
     } catch (error) {
-        mostrarMensajeRepartidor("❌ Error al actualizar estado: " + error.message, false);
+        mostrarMensajeRepartidor("❌ Error: " + error.message, false);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
 }
 
-// 3. ENTREGADO - Mensaje al REMITENTE
+// Entregado
 async function cambiarEstadoEntregado(id, telefonoRemitente, nombreRemitente) {
     const btn = event.target;
     const textoOriginal = btn.textContent;
@@ -392,7 +243,6 @@ async function cambiarEstadoEntregado(id, telefonoRemitente, nombreRemitente) {
     btn.disabled = true;
 
     try {
-        // Obtener datos del pedido
         const { data: pedido } = await supabaseClient
             .from("pedidos")
             .select("*")
@@ -404,58 +254,186 @@ async function cambiarEstadoEntregado(id, telefonoRemitente, nombreRemitente) {
             .update({ estado: "entregado" })
             .eq("id", id);
         
-        // Mensaje para el REMITENTE
         const mensajeRemitente = `✅ *PEDIDO ENTREGADO* ✅
 
-Hola ${nombreRemitente}, tu pedido ha sido entregado exitosamente.
+Hola ${nombreRemitente}, tu pedido ha sido entregado.
 
 🛵 Repartidor: ${repartidorNombre} (${repartidorTelefono})
 
-📦 Descripción: ${pedido.descripcion}
-📍 Dirección de entrega: ${pedido.entrega}
-
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-
-¡Gracias por usar Mandaditos Express! 🛵
-⭐ Califica tu experiencia: https://wa.me/5213111063251`;
+¡Gracias por usar Mandaditos Express! 🛵`;
         
-        // Mensaje para el administrador
-        const mensajeAdmin = `✅ *PEDIDO ENTREGADO* ✅
-
-🆔 Pedido #${pedido.id.substring(0, 8)}...
-👤 Remitente: ${nombreRemitente} (${telefonoRemitente})
-🛵 Repartidor: ${repartidorNombre}
-
-El pedido ha sido entregado correctamente.`;
-        
-        mostrarMensajeRepartidor("✅ Pedido marcado como 'Entregado'. Abriendo WhatsApp...");
-        
-        // Recargar pedidos
+        mostrarMensajeRepartidor("✅ Pedido entregado");
         await cargarPedidos();
         
-        // Abrir WhatsApp del REMITENTE
         setTimeout(() => {
-            if (telefonoRemitente) {
-                abrirWhatsApp(telefonoRemitente, mensajeRemitente);
-            }
+            if (telefonoRemitente) abrirWhatsApp(telefonoRemitente, mensajeRemitente);
         }, 500);
-        
-        // Abrir WhatsApp del administrador
-        setTimeout(() => {
-            const adminUrl = `https://wa.me/5213111063251?text=${encodeURIComponent(mensajeAdmin)}`;
-            window.open(adminUrl, '_blank');
-        }, 800);
         
         btn.textContent = textoOriginal;
         btn.disabled = false;
         
     } catch (error) {
-        mostrarMensajeRepartidor("❌ Error al actualizar estado: " + error.message, false);
+        mostrarMensajeRepartidor("❌ Error: " + error.message, false);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
 }
 
+// Función principal para cargar pedidos
+async function cargarPedidos() {
+    if (!contenedor) return;
+    
+    try {
+        actualizarEstadoConexion(true);
+        
+        contenedor.innerHTML = '<div class="loader">🔄 Cargando pedidos...</div>';
+        
+        const { data, error } = await supabaseClient
+            .from("pedidos")
+            .select("*")
+            .order("fecha", { ascending: false });
+        
+        if (error) throw error;
+        
+        // Contar pendientes
+        const pendientes = data.filter(p => p.estado === "pendiente").length;
+        if (pendientesCountSpan) pendientesCountSpan.textContent = pendientes;
+        
+        // Verificar nuevos pedidos
+        if (pendientes > ultimaCantidadPedidos) {
+            mostrarNotificacion(`🔔 ${pendientes - ultimaCantidadPedidos} nuevo(s) pedido(s) disponible(s)`);
+            // Sonido opcional
+            try {
+                const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
+                audio.volume = 0.3;
+                audio.play();
+            } catch (e) {}
+        }
+        ultimaCantidadPedidos = pendientes;
+        
+        // Filtrar según selección
+        let pedidosFiltrados = data;
+        if (filtroActual === "pendiente") {
+            pedidosFiltrados = data.filter(p => p.estado === "pendiente");
+        } else if (filtroActual === "asignado") {
+            pedidosFiltrados = data.filter(p => 
+                p.repartidor_id === repartidorId && 
+                (p.estado === "asignado" || p.estado === "en camino")
+            );
+        }
+        
+        actualizarTimestamp();
+        
+        if (pedidosFiltrados.length === 0) {
+            contenedor.innerHTML = '<div style="text-align:center; padding:20px;">📭 No hay pedidos que mostrar</div>';
+            return;
+        }
+        
+        // Renderizar pedidos
+        contenedor.innerHTML = "";
+        pedidosFiltrados.forEach(p => renderizarPedido(p));
+        
+    } catch (error) {
+        console.error("Error:", error);
+        actualizarEstadoConexion(false);
+        contenedor.innerHTML = '<div style="color:red; text-align:center;">❌ Error al cargar pedidos</div>';
+    }
+}
+
+// Renderizar un pedido individual
+function renderizarPedido(p) {
+    const card = document.createElement("div");
+    card.className = "card";
+    
+    const estadoClass = p.estado === "pendiente" ? "estado-pendiente" :
+                       p.estado === "asignado" ? "estado-asignado" :
+                       p.estado === "en camino" ? "estado-en-camino" : "estado-entregado";
+    card.classList.add(estadoClass);
+    
+    const fechaFormateada = formatearFechaLocal(p.fecha);
+    
+    let imagenesHtml = "";
+    if (p.fotos && p.fotos.length > 0) {
+        imagenesHtml = `
+            <div class="imagenes">
+                <strong>📸 Fotos del pedido:</strong>
+                <div class="imagenes-container">
+                    ${p.fotos.map(f => `<img src="${f}" onclick="verImagen('${f}')" loading="lazy">`).join("")}
+                </div>
+            </div>
+        `;
+    }
+    
+    card.innerHTML = `
+        <div class="pedido-header">
+            <strong>🆔 Pedido #${p.id.substring(0, 8)}...</strong>
+            <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+        </div>
+        
+        <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>
+        <button class="map-btn" onclick="abrirMaps('${p.recoleccion.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+
+        <p><strong>📍 Entrega:</strong> ${p.entrega}</p>
+        <button class="map-btn" onclick="abrirMaps('${p.entrega.replace(/'/g, "\\'")}')">🗺️ Ver en mapa</button>
+
+        <p><strong>👤 Envía:</strong> ${p.remitente}</p>
+        <p><strong>📞 Tel (Remitente):</strong> ${p.tel_remitente || "No disponible"}</p>
+        <a href="tel:${p.tel_remitente}" class="btn-call">📞 Llamar al remitente</a>
+
+        <p><strong>👤 Recibe:</strong> ${p.destinatario}</p>
+        <p><strong>📞 Tel (Destinatario):</strong> ${p.tel_destinatario || "No disponible"}</p>
+        <a href="tel:${p.tel_destinatario}" class="btn-call">📞 Llamar al destinatario</a>
+
+        <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
+        <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
+        <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
+        <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
+        ${p.repartidor_nombre ? `<p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre}</p>` : ''}
+        ${imagenesHtml}
+    `;
+    
+    const btnContainer = document.createElement("div");
+    btnContainer.className = "botones-accion";
+    
+    if (p.estado === "pendiente") {
+        const btnAceptar = document.createElement("button");
+        btnAceptar.textContent = "✅ Aceptar pedido";
+        btnAceptar.style.background = "#28a745";
+        btnAceptar.onclick = () => aceptarPedido(p.id, p.tel_remitente, p.remitente, p.recoleccion);
+        btnContainer.appendChild(btnAceptar);
+    }
+    
+    if (p.repartidor_id === repartidorId && p.estado === "asignado") {
+        const btnEnCamino = document.createElement("button");
+        btnEnCamino.textContent = "🚚 En camino (recogido)";
+        btnEnCamino.style.background = "#17a2b8";
+        btnEnCamino.onclick = () => cambiarEstadoEnCamino(p.id, p.tel_destinatario, p.destinatario, p.entrega);
+        
+        const btnEntregado = document.createElement("button");
+        btnEntregado.textContent = "✅ Entregado";
+        btnEntregado.style.background = "#6c757d";
+        btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
+        
+        btnContainer.appendChild(btnEnCamino);
+        btnContainer.appendChild(btnEntregado);
+    }
+    
+    if (p.repartidor_id === repartidorId && p.estado === "en camino") {
+        const btnEntregado = document.createElement("button");
+        btnEntregado.textContent = "✅ Marcar como entregado";
+        btnEntregado.style.background = "#28a745";
+        btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
+        btnContainer.appendChild(btnEntregado);
+    }
+    
+    if (btnContainer.children.length > 0) {
+        card.appendChild(btnContainer);
+    }
+    
+    contenedor.appendChild(card);
+}
+
+// Funciones auxiliares
 function abrirMaps(direccion) {
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
     window.open(url, "_blank");
@@ -465,19 +443,72 @@ function verImagen(url) {
     window.open(url, "_blank");
 }
 
-// Escuchar cambios en tiempo real
-supabaseClient
-    .channel("pedidos-repartidor")
-    .on("postgres_changes",
-        { event: "*", schema: "public", table: "pedidos" },
-        () => cargarPedidos()
-    )
-    .subscribe();
+function cerrarSesion() {
+    if (confirm("¿Seguro que quieres cerrar sesión?")) {
+        localStorage.removeItem("repartidor_id");
+        localStorage.removeItem("repartidor_nombre");
+        localStorage.removeItem("repartidor_telefono");
+        window.location.href = "login-repartidor.html";
+    }
+}
 
-// Cargar pedidos
+function refrescarManual() {
+    mostrarMensajeRepartidor("🔄 Actualizando...");
+    cargarPedidos();
+}
+
+// Configurar filtros
+function configurarFiltros() {
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    filterBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            filterBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            filtroActual = btn.dataset.filter;
+            cargarPedidos();
+        });
+    });
+}
+
+// Iniciar actualización automática
+function iniciarActualizacionAutomatica() {
+    intervaloActualizacion = setInterval(() => {
+        cargarPedidos();
+    }, 10000); // Cada 10 segundos
+    
+    // Actualizar al volver a la pestaña
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            cargarPedidos();
+        }
+    });
+}
+
+// Suscripción en tiempo real
+function suscribirCambios() {
+    supabaseClient
+        .channel("pedidos-repartidor")
+        .on("postgres_changes",
+            { event: "*", schema: "public", table: "pedidos" },
+            (payload) => {
+                console.log("Cambio detectado:", payload);
+                cargarPedidos();
+            }
+        )
+        .subscribe();
+}
+
+// Inicializar
+configurarFiltros();
 cargarPedidos();
+iniciarActualizacionAutomatica();
+suscribirCambios();
 
-// Exponer funciones globalmente
+// Exponer funciones globales
 window.cerrarSesion = cerrarSesion;
 window.abrirMaps = abrirMaps;
 window.verImagen = verImagen;
+window.refrescarManual = refrescarManual;
+window.aceptarPedido = aceptarPedido;
+window.cambiarEstadoEnCamino = cambiarEstadoEnCamino;
+window.cambiarEstadoEntregado = cambiarEstadoEntregado;

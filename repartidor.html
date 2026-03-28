@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Repartidor - Mandaditos Express</title>
     <link rel="stylesheet" href="repartidor.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
@@ -13,14 +14,45 @@
         <h1>🛵 Mandaditos Express</h1>
         <div class="repartidor-bienvenida">
             <span>👋 Hola, <strong id="nombreRepartidor"></strong></span>
-            <button class="btn-cerrar-sesion" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+            <div class="status-indicator">
+                <span id="connection-status" class="status online">
+                    <i class="fas fa-circle"></i> Conectado
+                </span>
+                <button class="btn-refrescar" onclick="refrescarManual()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-cerrar-sesion" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+            </div>
         </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <i class="fas fa-clock"></i>
+            <span id="last-update">Actualizando...</span>
+        </div>
+        <div class="stat">
+            <i class="fas fa-tasks"></i>
+            <span id="pendientes-count">0</span>
+            <small>Pendientes</small>
+        </div>
+    </div>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="todos">📋 Todos</button>
+        <button class="filter-btn" data-filter="pendiente">⏳ Pendientes</button>
+        <button class="filter-btn" data-filter="asignado">✅ Mis pedidos</button>
     </div>
 
     <div id="pedidos"></div>
 </div>
 
 <a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
+
+<div id="notification" class="notification hidden">
+    <i class="fas fa-bell"></i>
+    <span id="notification-message"></span>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="repartidor.js"></script>
