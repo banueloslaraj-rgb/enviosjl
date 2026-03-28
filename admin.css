@@ -139,3 +139,116 @@
 .stat-badge:active {
     transform: translateY(0);
 }
+
+/* Estadísticas con filtros clickeables */
+.stats-filtros {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-filtro {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.stat-filtro:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.stat-filtro:active {
+    transform: translateY(0);
+}
+
+.stat-numero {
+    font-size: 28px;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-texto {
+    font-size: 12px;
+    color: #666;
+}
+
+.pendiente-filtro .stat-numero { color: #f39c12; }
+.pendiente-filtro { border-left: 4px solid #f39c12; }
+
+.asignado-filtro .stat-numero { color: #27ae60; }
+.asignado-filtro { border-left: 4px solid #27ae60; }
+
+.encamino-filtro .stat-numero { color: #17a2b8; }
+.encamino-filtro { border-left: 4px solid #17a2b8; }
+
+.entregado-filtro .stat-numero { color: #6c757d; }
+.entregado-filtro { border-left: 4px solid #6c757d; }
+
+/* Filtro activo */
+.filtro-activo {
+    background: #e3f2fd;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.btn-limpiar-filtro {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    width: auto;
+    margin: 0;
+}
+
+/* Secciones de pedidos */
+.seccion-pedidos {
+    margin-bottom: 25px;
+}
+
+.seccion-titulo {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.pendiente-titulo {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #f39c12;
+}
+
+.asignado-titulo {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #27ae60;
+}
+
+.encamino-titulo {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+.entregado-titulo {
+    background: #e9ecef;
+    color: #495057;
+    border-left: 4px solid #6c757d;
+}
