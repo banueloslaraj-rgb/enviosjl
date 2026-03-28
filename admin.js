@@ -248,7 +248,7 @@ async function cargarPedidos() {
     }
 }
 
-// 🛵 Cargar repartidores (misma función, pero con UUID si es necesario)
+// 🛵 Cargar repartidores
 async function cargarRepartidores() {
     if (!contenedorRepartidores) return;
     
@@ -358,7 +358,7 @@ async function cargarRepartidores() {
     }
 }
 
-// 🔄 Actualizar estado de repartidor
+// 🔄 Actualizar estado de repartidor - CON URL CORREGIDA
 async function actualizarEstadoRepartidor(id) {
     const selectElement = document.getElementById(`estado-rep-${id}`);
     if (!selectElement) return;
@@ -387,8 +387,11 @@ async function actualizarEstadoRepartidor(id) {
         
         btn.innerText = "✅ Actualizado";
         
+        // URL CORRECTA para el repartidor
+        const loginUrl = "https://banueloslaraj-rgb.github.io/enviosjl/login-repartidor.html";
+        
         if (estado === "activo" && repartidor && repartidor.telefono) {
-            const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${window.location.origin}/login-repartidor.html\n\n¡Bienvenido al equipo! 🛵`;
+            const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${loginUrl}\n\n¡Bienvenido al equipo! 🛵`;
             window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
         }
         

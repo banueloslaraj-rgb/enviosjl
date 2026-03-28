@@ -55,8 +55,10 @@ function mostrarMensaje(texto, tipo) {
     }, 5000);
 }
 
-// Enviar WhatsApp al repartidor
+// Enviar WhatsApp al repartidor - URL CORRECTA
 function enviarWhatsAppRepartidor(telefono, nombre, codigo) {
+    const loginUrl = "https://banueloslaraj-rgb.github.io/enviosjl/login-repartidor.html";
+    
     const mensaje = `🎉 *¡BIENVENIDO A MANDADITOS EXPRESS!* 🎉
 
 Hola ${nombre}, tu registro como repartidor ha sido exitoso.
@@ -65,7 +67,7 @@ Hola ${nombre}, tu registro como repartidor ha sido exitoso.
 
 📝 *Instrucciones:*
 1. Guarda este código
-2. Ve a: ${window.location.origin}/login-repartidor.html
+2. Ve a: ${loginUrl}
 3. Ingresa tu código para acceder a los pedidos
 
 ⚠️ Tu registro está pendiente de revisión por el administrador.
@@ -77,9 +79,10 @@ Una vez aprobado, podrás empezar a recibir pedidos.
     window.open(url, '_blank');
 }
 
-// Enviar WhatsApp al administrador
+// Enviar WhatsApp al administrador - URL CORRECTA
 function enviarWhatsAppAdmin(repartidor, codigo) {
     const adminWhatsApp = "5213111063251";
+    const adminUrl = "https://banueloslaraj-rgb.github.io/enviosjl/admin.html";
     
     const mensaje = `🛵 *NUEVO REGISTRO DE REPARTIDOR* 🛵
 
@@ -102,7 +105,7 @@ ${repartidor.licencia ? "✅ Licencia de conducir" : "⚠️ Licencia no subida 
 2. Aprobar o rechazar el registro en el panel de administración
 3. El repartidor ya recibió su código por WhatsApp
 
-🔗 Panel admin: ${window.location.origin}/admin.html`;
+🔗 Panel admin: ${adminUrl}`;
 
     const url = `https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
