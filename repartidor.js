@@ -31,15 +31,17 @@ function cerrarSesion() {
     }
 }
 
-// Función para enviar WhatsApp
-function enviarWhatsApp(telefono, mensaje) {
+// Función para enviar WhatsApp (abre la conversación)
+function abrirWhatsApp(telefono, mensaje) {
     if (!telefono) return;
-    const url = `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
+    // Limpiar el teléfono (solo números)
+    const telefonoLimpio = telefono.replace(/[^0-9]/g, '');
+    const url = `https://wa.me/52${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
 }
 
 // Función para enviar WhatsApp al administrador
-function enviarWhatsAppAdmin(mensaje) {
+function abrirWhatsAppAdmin(mensaje) {
     const adminWhatsApp = "5213111063251";
     const url = `https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
@@ -142,6 +144,7 @@ async function cargarPedidos() {
                 const btnAceptar = document.createElement("button");
                 btnAceptar.textContent = "✅ Aceptar pedido";
                 btnAceptar.onclick = () => aceptarPedido(p.id, p.tel_remitente, p.remitente, p.recoleccion);
+                btnAceptar.style.background = "#28a745";
                 btnContainer.appendChild(btnAceptar);
             }
 
@@ -177,7 +180,7 @@ async function cargarPedidos() {
     });
 }
 
-// 1. ACEPTAR PEDIDO - Mensaje al REMITENTE: "Repartidor en camino a recolección"
+// 1. ACEPTAR PEDIDO - Mensaje al REMITENTE y abre WhatsApp
 async function aceptarPedido(id, telefonoRemitente, nombreRemitente, direccionRecoleccion) {
     if (!repartidorId) {
         alert("⚠️ Error de sesión. Inicia sesión nuevamente.");
@@ -242,27 +245,31 @@ El repartidor llegará pronto para recoger tu paquete.`;
 
 El repartidor está en camino a la recolección.`;
         
-        // Enviar WhatsApp al REMITENTE
+        // Abrir WhatsApp del REMITENTE
         if (telefonoRemitente) {
-            enviarWhatsApp(telefonoRemitente, mensajeRemitente);
+            abrirWhatsApp(telefonoRemitente, mensajeRemitente);
         }
-        // Enviar WhatsApp al administrador
-        enviarWhatsAppAdmin(mensajeAdmin);
+        
+        // Abrir WhatsApp del administrador
+        abrirWhatsAppAdmin(mensajeAdmin);
         
         // Mostrar mensaje de éxito al repartidor
-        alert("✅ Pedido aceptado. Se ha notificado al remitente que estás en camino a recogerlo.");
+        alert("✅ Pedido aceptado. Se ha abierto WhatsApp para notificar al remitente.");
         
-        cargarPedidos();
+        // Recargar pedidos
+        setTimeout(() => {
+            cargarPedidos();
+        }, 2000);
         
     } catch (error) {
         console.error("Error:", error);
-        alert("❌ Error al aceptar pedido");
+        alert("❌ Error al aceptar pedido: " + error.message);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
 }
 
-// 2. EN CAMINO - Mensaje al DESTINATARIO: "Pedido en camino a tu domicilio"
+// 2. EN CAMINO - Mensaje al DESTINATARIO y abre WhatsApp
 async function cambiarEstadoEnCamino(id, telefonoDestinatario, nombreDestinatario, direccionEntrega) {
     const btn = event.target;
     const textoOriginal = btn.textContent;
@@ -306,26 +313,30 @@ El repartidor llegará pronto. Por favor, estate atento.`;
 
 El repartidor ya recogió el paquete y está en camino a la entrega.`;
         
-        // Enviar WhatsApp al DESTINATARIO
+        // Abrir WhatsApp del DESTINATARIO
         if (telefonoDestinatario) {
-            enviarWhatsApp(telefonoDestinatario, mensajeDestinatario);
+            abrirWhatsApp(telefonoDestinatario, mensajeDestinatario);
         }
-        // Enviar WhatsApp al administrador
-        enviarWhatsAppAdmin(mensajeAdmin);
+        
+        // Abrir WhatsApp del administrador
+        abrirWhatsAppAdmin(mensajeAdmin);
         
         // Mostrar mensaje de éxito al repartidor
-        alert("✅ Pedido marcado como 'En camino'. Se ha notificado al destinatario.");
+        alert("✅ Pedido marcado como 'En camino'. Se ha abierto WhatsApp para notificar al destinatario.");
         
-        cargarPedidos();
+        // Recargar pedidos
+        setTimeout(() => {
+            cargarPedidos();
+        }, 2000);
         
     } catch (error) {
-        alert("❌ Error al actualizar estado");
+        alert("❌ Error al actualizar estado: " + error.message);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
 }
 
-// 3. ENTREGADO - Mensaje al REMITENTE: "Pedido entregado exitosamente"
+// 3. ENTREGADO - Mensaje al REMITENTE y abre WhatsApp
 async function cambiarEstadoEntregado(id, telefonoRemitente, nombreRemitente) {
     const btn = event.target;
     const textoOriginal = btn.textContent;
@@ -369,20 +380,24 @@ Hola ${nombreRemitente}, tu pedido ha sido entregado exitosamente.
 
 El pedido ha sido entregado correctamente.`;
         
-        // Enviar WhatsApp al REMITENTE
+        // Abrir WhatsApp del REMITENTE
         if (telefonoRemitente) {
-            enviarWhatsApp(telefonoRemitente, mensajeRemitente);
+            abrirWhatsApp(telefonoRemitente, mensajeRemitente);
         }
-        // Enviar WhatsApp al administrador
-        enviarWhatsAppAdmin(mensajeAdmin);
+        
+        // Abrir WhatsApp del administrador
+        abrirWhatsAppAdmin(mensajeAdmin);
         
         // Mostrar mensaje de éxito al repartidor
-        alert("✅ Pedido marcado como 'Entregado'. Se ha notificado al remitente.");
+        alert("✅ Pedido marcado como 'Entregado'. Se ha abierto WhatsApp para notificar al remitente.");
         
-        cargarPedidos();
+        // Recargar pedidos
+        setTimeout(() => {
+            cargarPedidos();
+        }, 2000);
         
     } catch (error) {
-        alert("❌ Error al actualizar estado");
+        alert("❌ Error al actualizar estado: " + error.message);
         btn.textContent = textoOriginal;
         btn.disabled = false;
     }
