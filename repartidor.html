@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repartidor</title>
-  <link rel="stylesheet" href="repartidor.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Repartidor - Mandaditos Express</title>
+    <link rel="stylesheet" href="repartidor.css">
 </head>
-
 <body>
 
 <div class="container">
-  <h1>🛵 Pedidos</h1>
+    <div class="header-info">
+        <h1>🛵 Mandaditos Express</h1>
+        <div class="repartidor-bienvenida">
+            <span>👋 Hola, <strong id="nombreRepartidor"></strong></span>
+            <button class="btn-cerrar-sesion" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+        </div>
+    </div>
 
-  <input type="text" id="nombre" placeholder="Tu nombre">
-  <button onclick="guardar()">Guardar</button>
-
-  <div id="pedidos"></div>
+    <div id="pedidos"></div>
 </div>
 
-<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">
-  💬
-</a>
+<a href="https://wa.me/5213111063251" class="wpp-btn" target="_blank">💬</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="repartidor.js"></script>
