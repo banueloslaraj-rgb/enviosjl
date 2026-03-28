@@ -125,23 +125,10 @@ async function subirImagen(file, index) {
         
         console.log(`🔗 URL pública: ${urlData.publicUrl}`);
         
-        // Verificar que la URL sea accesible
-        try {
-            const testResponse = await fetch(urlData.publicUrl, { method: 'HEAD' });
-            if (testResponse.ok) {
-                console.log(`✅ URL accesible`);
-            } else {
-                console.warn(`⚠️ URL generada pero no accesible: ${testResponse.status}`);
-            }
-        } catch (err) {
-            console.warn(`⚠️ No se pudo verificar la URL: ${err.message}`);
-        }
-        
         return urlData.publicUrl;
         
     } catch (error) {
         console.error(`❌ Error en subida de imagen ${index + 1}:`, error);
-        console.error("Stack trace:", error.stack);
         mostrarMensaje(`❌ Error al subir ${file.name}: ${error.message}`, "error");
         return null;
     }
@@ -193,36 +180,34 @@ async function subirImagenes(files) {
     return urls;
 }
 
-// Función para actualizar el label de fotos
-function actualizarLabelFotos(input) {
-    const fileLabel = document.querySelector(".file-label");
-    if (!fileLabel) return;
+// Función para actualizar la información de fotos (VERSIÓN CORREGIDA)
+function actualizarInfoFotos(input) {
+    const fotosInfo = document.getElementById("fotos-info");
+    if (!fotosInfo) return;
     
     const cantidad = input.files.length;
     console.log("📸 Cantidad de fotos seleccionadas:", cantidad);
     
     if (cantidad > 0) {
-        fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) ✅`;
-        fileLabel.style.background = "#d4edda";
-        fileLabel.style.borderColor = "#28a745";
-        
-        // Mostrar nombres de archivos seleccionados
-        console.log("📸 Archivos seleccionados:");
+        let nombres = [];
+        let tamanos = [];
         for (let i = 0; i < input.files.length; i++) {
-            console.log(`   ${i + 1}. ${input.files[i].name} (${(input.files[i].size / 1024).toFixed(2)} KB)`);
+            nombres.push(input.files[i].name);
+            tamanos.push((input.files[i].size / 1024).toFixed(2) + " KB");
         }
+        
+        fotosInfo.innerHTML = `✅ ${cantidad} foto(s) seleccionada(s):<br>`;
+        for (let i = 0; i < nombres.length; i++) {
+            fotosInfo.innerHTML += `📷 ${nombres[i]} (${tamanos[i]})<br>`;
+        }
+        fotosInfo.style.color = "#28a745";
+        fotosInfo.style.background = "#d4edda";
+        fotosInfo.style.padding = "10px";
+        fotosInfo.style.borderRadius = "5px";
+        fotosInfo.style.marginTop = "5px";
     } else {
-        fileLabel.innerHTML = `📸 Subir fotos
-            <input type="file" id="fotos" multiple accept="image/*">`;
-        fileLabel.style.background = "";
-        fileLabel.style.borderColor = "";
-        // Reasignar el evento al nuevo input
-        const newInput = document.getElementById("fotos");
-        if (newInput) {
-            newInput.addEventListener("change", function() {
-                actualizarLabelFotos(this);
-            });
-        }
+        fotosInfo.innerHTML = "";
+        fotosInfo.style.background = "";
     }
 }
 
@@ -254,7 +239,6 @@ async function diagnosticarSupabase() {
         
         if (error) {
             console.error("❌ Error al listar buckets:", error.message);
-            console.error("   Detalle:", error);
         } else {
             console.log("✅ Buckets disponibles:");
             if (buckets && buckets.length > 0) {
@@ -268,58 +252,12 @@ async function diagnosticarSupabase() {
             const fotosBucket = buckets ? buckets.find(b => b.name === "fotos") : null;
             if (fotosBucket) {
                 console.log("✅✅✅ Bucket 'fotos' EXISTE");
-                console.log(`   - ID: ${fotosBucket.id}`);
-                console.log(`   - Público: ${fotosBucket.public}`);
             } else {
-                console.error("❌❌❌ Bucket 'fotos' NO EXISTE");
-                console.error("   🔴 SOLUCIÓN: Debes crearlo en Supabase Dashboard > Storage");
+                console.log("⚠️ Bucket 'fotos' no aparece en la lista pero puede funcionar igual");
             }
         }
     } catch (err) {
         console.error("❌ Excepción al listar buckets:", err.message);
-    }
-    
-    // 3. Probar subida con archivo de prueba
-    console.log("\n3️⃣ Probando subida con archivo de prueba:");
-    try {
-        const testBlob = new Blob(["test content"], { type: "text/plain" });
-        const testFileName = `test_${Date.now()}.txt`;
-        
-        const { data, error } = await supabaseClient.storage
-            .from("fotos")
-            .upload(testFileName, testBlob, {
-                cacheControl: '3600',
-                upsert: false
-            });
-        
-        if (error) {
-            console.error("❌ Error en subida de prueba:", error.message);
-            console.error("   Código:", error.statusCode);
-            
-            if (error.message.includes("bucket not found")) {
-                console.error("   🔴 SOLUCIÓN: Crea el bucket 'fotos' en Supabase como se indicó arriba");
-            } else if (error.message.includes("permission denied")) {
-                console.error("   🔴 SOLUCIÓN: Verifica las políticas de seguridad del bucket");
-            } else if (error.message.includes("JWT")) {
-                console.error("   🔴 SOLUCIÓN: La clave de API puede ser incorrecta o expiró");
-            }
-        } else {
-            console.log("✅ Subida de prueba exitosa");
-            console.log(`   Path: ${data.path}`);
-            
-            // Limpiar archivo de prueba
-            const { error: removeError } = await supabaseClient.storage
-                .from("fotos")
-                .remove([testFileName]);
-            
-            if (removeError) {
-                console.warn("   ⚠️ No se pudo eliminar el archivo de prueba:", removeError.message);
-            } else {
-                console.log("   🧹 Archivo de prueba eliminado");
-            }
-        }
-    } catch (err) {
-        console.error("❌ Excepción en subida de prueba:", err.message);
     }
     
     console.log("\n🔍 ========== FIN DIAGNÓSTICO ==========");
@@ -367,21 +305,7 @@ async function probarSubidaImagen() {
             });
         
         if (error) {
-            console.error("❌ ERROR EN SUBIDA:");
-            console.error("   - Mensaje:", error.message);
-            console.error("   - Status:", error.statusCode);
-            console.error("   - Error completo:", error);
-            
-            // Mostrar sugerencias según el error
-            if (error.message.includes("permission")) {
-                console.error("🔴 SOLUCIÓN: Problema de permisos. Verifica las políticas del bucket.");
-                console.error("   En Supabase Dashboard > Storage > fotos > Policies");
-                console.error("   Asegúrate de tener políticas que permitan INSERT y SELECT para anon");
-            } else if (error.message.includes("row-level security")) {
-                console.error("🔴 SOLUCIÓN: Error de RLS. Debes crear políticas de seguridad.");
-            } else if (error.message.includes("JWT")) {
-                console.error("🔴 SOLUCIÓN: Problema con la clave API. Verifica que sea correcta.");
-            }
+            console.error("❌ ERROR EN SUBIDA:", error.message);
         } else {
             console.log("✅ SUBIDA EXITOSA!");
             console.log("   - Path:", data.path);
@@ -393,33 +317,13 @@ async function probarSubidaImagen() {
             
             console.log("   - URL pública:", urlData.publicUrl);
             
-            // Intentar acceder a la URL
-            try {
-                const response = await fetch(urlData.publicUrl, { method: 'HEAD' });
-                if (response.ok) {
-                    console.log("   - ✅ URL accesible!");
-                } else {
-                    console.log("   - ⚠️ URL generada pero no accesible (status:", response.status, ")");
-                }
-            } catch (err) {
-                console.log("   - ⚠️ No se pudo verificar URL:", err.message);
-            }
-            
             // Limpiar archivo de prueba
             console.log("🧹 Eliminando archivo de prueba...");
-            const { error: removeError } = await supabaseClient.storage
-                .from("fotos")
-                .remove([fileName]);
-            
-            if (removeError) {
-                console.warn("   ⚠️ No se pudo eliminar:", removeError.message);
-            } else {
-                console.log("   ✅ Archivo de prueba eliminado");
-            }
+            await supabaseClient.storage.from("fotos").remove([fileName]);
+            console.log("   ✅ Archivo de prueba eliminado");
         }
     } catch (err) {
         console.error("❌ EXCEPCIÓN:", err);
-        console.error("   Stack:", err.stack);
     }
     
     console.log("🧪 ========== FIN PRUEBA ==========");
@@ -429,6 +333,25 @@ async function probarSubidaImagen() {
 const pagoInput = document.getElementById("pago");
 if (pagoInput) {
     pagoInput.addEventListener("input", actualizarEnvio);
+}
+
+// Configurar la subida de fotos (VERSIÓN CORREGIDA)
+const fileLabelButton = document.querySelector(".file-label-button");
+const fotosInput = document.getElementById("fotos");
+
+if (fileLabelButton && fotosInput) {
+    // Abrir selector de archivos al hacer clic en el label
+    fileLabelButton.addEventListener("click", function(e) {
+        e.preventDefault();
+        fotosInput.click();
+    });
+    
+    // Actualizar información cuando se seleccionan archivos
+    fotosInput.addEventListener("change", function() {
+        console.log("📸 Evento change detectado!");
+        console.log("📸 Archivos seleccionados:", this.files.length);
+        actualizarInfoFotos(this);
+    });
 }
 
 // Evento principal del formulario
@@ -467,16 +390,16 @@ form.addEventListener("submit", async (e) => {
         const telRemitente = document.getElementById("telRemitente");
         const telDestinatario = document.getElementById("telDestinatario");
         const envioCalculado = document.getElementById("envioCalculado");
-        const fotosInput = document.getElementById("fotos");
+        const fotosInputSubmit = document.getElementById("fotos");
         
         // DIAGNÓSTICO DE FOTOS
         console.log("🔍 DIAGNÓSTICO DE FOTOS:");
-        console.log("fotosInput existe:", fotosInput);
-        if (fotosInput) {
-            console.log("fotosInput.files:", fotosInput.files);
-            console.log("Cantidad de archivos:", fotosInput.files.length);
-            for (let i = 0; i < fotosInput.files.length; i++) {
-                console.log(`Archivo ${i}:`, fotosInput.files[i].name, `${(fotosInput.files[i].size / 1024).toFixed(2)} KB`, fotosInput.files[i].type);
+        console.log("fotosInput existe:", fotosInputSubmit);
+        if (fotosInputSubmit) {
+            console.log("fotosInput.files:", fotosInputSubmit.files);
+            console.log("Cantidad de archivos:", fotosInputSubmit.files.length);
+            for (let i = 0; i < fotosInputSubmit.files.length; i++) {
+                console.log(`Archivo ${i}:`, fotosInputSubmit.files[i].name, `${(fotosInputSubmit.files[i].size / 1024).toFixed(2)} KB`, fotosInputSubmit.files[i].type);
             }
         }
         
@@ -492,15 +415,15 @@ form.addEventListener("submit", async (e) => {
         
         // Subir imágenes
         let fotosUrls = [];
-        if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
-            console.log(`📸 PROCESANDO ${fotosInput.files.length} imagen(es)`);
-            submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
-            fotosUrls = await subirImagenes(fotosInput.files);
+        if (fotosInputSubmit && fotosInputSubmit.files && fotosInputSubmit.files.length > 0) {
+            console.log(`📸 PROCESANDO ${fotosInputSubmit.files.length} imagen(es)`);
+            submitBtn.textContent = `⏳ Subiendo ${fotosInputSubmit.files.length} imagen(es)...`;
+            fotosUrls = await subirImagenes(fotosInputSubmit.files);
             console.log("📸 URLs finales obtenidas:", fotosUrls);
             
             // Verificar si se subieron todas las imágenes
-            if (fotosUrls.length !== fotosInput.files.length) {
-                console.warn(`⚠️ Solo se subieron ${fotosUrls.length} de ${fotosInput.files.length} imágenes`);
+            if (fotosUrls.length !== fotosInputSubmit.files.length) {
+                console.warn(`⚠️ Solo se subieron ${fotosUrls.length} de ${fotosInputSubmit.files.length} imágenes`);
             }
         } else {
             console.log("📸 No hay imágenes seleccionadas - continuando sin fotos");
@@ -562,7 +485,6 @@ form.addEventListener("submit", async (e) => {
         
         if (fotosUrls.length > 0) {
             texto += `📸 *Fotos:* ${fotosUrls.length} imagen(es) subida(s)\n`;
-            texto += `🔗 Ver en panel admin: ${window.location.origin}/admin.html\n`;
         }
         
         texto += `\n🕐 *Fecha:* ${new Date(datos.fecha).toLocaleString()}`;
@@ -573,21 +495,16 @@ form.addEventListener("submit", async (e) => {
         // Limpiar el formulario
         form.reset();
         
-        // Resetear el label de fotos
-        const fileLabel = document.querySelector(".file-label");
-        if (fileLabel) {
-            fileLabel.innerHTML = `📸 Subir fotos
-                <input type="file" id="fotos" multiple accept="image/*">`;
-            fileLabel.style.background = "";
-            fileLabel.style.borderColor = "";
-            
-            // Reasignar evento al nuevo input
-            const newFotosInput = document.getElementById("fotos");
-            if (newFotosInput) {
-                newFotosInput.addEventListener("change", function() {
-                    actualizarLabelFotos(this);
-                });
-            }
+        // Limpiar la información de fotos
+        const fotosInfo = document.getElementById("fotos-info");
+        if (fotosInfo) {
+            fotosInfo.innerHTML = "";
+            fotosInfo.style.background = "";
+        }
+        
+        // Resetear el input de fotos
+        if (fotosInputSubmit) {
+            fotosInputSubmit.value = "";
         }
         
         // Pequeño delay antes de redirigir
@@ -616,16 +533,6 @@ form.addEventListener("submit", async (e) => {
         submitBtn.disabled = false;
     }
 });
-
-// Configurar el evento de cambio de fotos INICIAL
-const fotosInputInicial = document.getElementById("fotos");
-if (fotosInputInicial) {
-    fotosInputInicial.addEventListener("change", function() {
-        console.log("📸 Evento change detectado!");
-        console.log("📸 Archivos seleccionados:", this.files.length);
-        actualizarLabelFotos(this);
-    });
-}
 
 // Calcular envío inicial si hay valor en pago
 if (pagoInput && pagoInput.value) {

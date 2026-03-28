@@ -33,10 +33,13 @@
 
     <input type="text" id="envioCalculado" placeholder="🚚 Costo de envío automático" readonly>
 
-    <label class="file-label">
-      📸 Subir fotos
-      <input type="file" id="fotos" multiple>
-    </label>
+    <!-- SECCIÓN DE FOTOS CORREGIDA -->
+    <div class="file-upload">
+      <label for="fotos" class="file-label-button">📸 Subir fotos</label>
+      <input type="file" id="fotos" name="fotos" multiple accept="image/*" style="display: none;">
+      <div id="fotos-info" class="file-info"></div>
+      <small class="file-hint">Puedes seleccionar varias fotos (máx. 5MB cada una)</small>
+    </div>
 
     <button type="submit">Solicitar ahora</button>
 
