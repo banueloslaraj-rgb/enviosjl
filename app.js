@@ -10,6 +10,7 @@ let isSubmitting = false;
 async function verificarBucket() {
     console.log("🔍 Verificando bucket 'fotos'...");
     try {
+        // Intentar listar archivos del bucket (solo para verificar existencia)
         const { data, error } = await supabaseClient.storage
             .from("fotos")
             .list("", { limit: 1 });
@@ -17,7 +18,8 @@ async function verificarBucket() {
         if (error) {
             console.error("❌ Error al acceder al bucket 'fotos':", error);
             console.log("⚠️ El bucket 'fotos' puede no existir o no tener permisos");
-            console.log("📌 Debes crearlo en Supabase > Storage");
+            console.log("📌 Debes crearlo en Supabase > Storage con nombre 'fotos'");
+            mostrarMensaje("⚠️ Error: El bucket 'fotos' no existe en Supabase. Contacta al administrador.", "error");
         } else {
             console.log("✅ Bucket 'fotos' accesible correctamente");
         }
@@ -77,7 +79,7 @@ function mostrarMensaje(texto, tipo) {
     }, 5000);
 }
 
-// Función para subir una imagen individual - VERSIÓN MEJORADA
+// Función para subir una imagen individual - VERSIÓN CORREGIDA
 async function subirImagen(file, index) {
     if (!file) {
         console.log("⚠️ Archivo nulo, omitiendo");
@@ -86,12 +88,12 @@ async function subirImagen(file, index) {
     
     // Limpiar nombre del archivo
     const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const extension = cleanName.split('.').pop();
     const fileName = `${Date.now()}-${index}-${cleanName}`;
     
-    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB`);
+    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB, tipo: ${file.type}`);
     
     try {
+        // Subir archivo a Supabase Storage
         const { data, error } = await supabaseClient.storage
             .from("fotos")
             .upload(fileName, file, {
@@ -105,13 +107,14 @@ async function subirImagen(file, index) {
             return null;
         }
         
-        console.log(`✅ Imagen ${index + 1} subida correctamente`);
+        console.log(`✅ Imagen ${index + 1} subida correctamente:`, data);
         
+        // Obtener URL pública
         const { data: urlData } = supabaseClient.storage
             .from("fotos")
             .getPublicUrl(fileName);
         
-        console.log(`🔗 URL: ${urlData.publicUrl}`);
+        console.log(`🔗 URL pública: ${urlData.publicUrl}`);
         return urlData.publicUrl;
         
     } catch (error) {
@@ -120,7 +123,7 @@ async function subirImagen(file, index) {
     }
 }
 
-// Función para subir múltiples imágenes - VERSIÓN MEJORADA
+// Función para subir múltiples imágenes
 async function subirImagenes(files) {
     if (!files || files.length === 0) {
         console.log("📸 No hay imágenes para subir");
@@ -144,6 +147,9 @@ async function subirImagenes(files) {
     }
     
     console.log(`📸 Resultado: ${subidasExitosas} de ${files.length} imágenes subidas`);
+    if (urls.length > 0) {
+        console.log("📸 URLs obtenidas:", urls);
+    }
     return urls;
 }
 
@@ -224,10 +230,11 @@ form.addEventListener("submit", async (e) => {
         let fotosUrls = [];
         if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
             console.log(`📸 Se encontraron ${fotosInput.files.length} imagen(es)`);
+            console.log("📸 Nombres de archivos:", Array.from(fotosInput.files).map(f => f.name));
             mostrarMensaje(`📸 Subiendo ${fotosInput.files.length} imagen(es)...`, "info");
             submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
             fotosUrls = await subirImagenes(fotosInput.files);
-            console.log("📸 URLs obtenidas:", fotosUrls);
+            console.log("📸 URLs finales obtenidas:", fotosUrls);
         } else {
             console.log("📸 No hay imágenes seleccionadas");
         }
@@ -258,7 +265,7 @@ form.addEventListener("submit", async (e) => {
         };
         
         console.log("💾 Guardando pedido en Supabase...");
-        console.log("📦 Datos:", datos);
+        console.log("📦 Datos a guardar:", JSON.stringify(datos, null, 2));
         submitBtn.textContent = "⏳ Guardando pedido...";
         
         // Guardar en Supabase
@@ -296,6 +303,13 @@ form.addEventListener("submit", async (e) => {
                 <input type="file" id="fotos" multiple accept="image/*">`;
             fileLabel.style.background = "";
             fileLabel.style.borderColor = "";
+            // Reasignar el evento al nuevo input
+            const newInput = document.getElementById("fotos");
+            if (newInput) {
+                newInput.addEventListener("change", function() {
+                    actualizarLabelFotos(this);
+                });
+            }
         }
         
         // Pequeño delay antes de redirigir
