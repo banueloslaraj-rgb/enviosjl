@@ -6,28 +6,6 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Variable para prevenir doble clic
 let isSubmitting = false;
 
-// DIAGNÓSTICO: Verificar bucket de fotos al cargar
-async function verificarBucket() {
-    console.log("🔍 Verificando bucket 'fotos'...");
-    try {
-        // Intentar listar archivos del bucket (solo para verificar existencia)
-        const { data, error } = await supabaseClient.storage
-            .from("fotos")
-            .list("", { limit: 1 });
-        
-        if (error) {
-            console.error("❌ Error al acceder al bucket 'fotos':", error);
-            console.log("⚠️ El bucket 'fotos' puede no existir o no tener permisos");
-            console.log("📌 Debes crearlo en Supabase > Storage con nombre 'fotos'");
-            mostrarMensaje("⚠️ Error: El bucket 'fotos' no existe en Supabase. Contacta al administrador.", "error");
-        } else {
-            console.log("✅ Bucket 'fotos' accesible correctamente");
-        }
-    } catch (e) {
-        console.error("❌ Error en verificación:", e);
-    }
-}
-
 // Distancia simulada
 function calcularDistancia() {
     return Math.floor(Math.random() * 6) + 1;
@@ -79,21 +57,20 @@ function mostrarMensaje(texto, tipo) {
     }, 5000);
 }
 
-// Función para subir una imagen individual - VERSIÓN CORREGIDA
+// Función para subir una imagen individual
 async function subirImagen(file, index) {
-    if (!file) {
-        console.log("⚠️ Archivo nulo, omitiendo");
-        return null;
-    }
+    if (!file) return null;
     
-    // Limpiar nombre del archivo
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${Date.now()}-${index}-${cleanName}`;
+    // Generar nombre único para el archivo
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const extension = file.name.split('.').pop().toLowerCase();
+    const fileName = `pedido_${timestamp}_${random}_${index}.${extension}`;
     
-    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB, tipo: ${file.type}`);
+    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}`);
     
     try {
-        // Subir archivo a Supabase Storage
+        // Subir a Supabase Storage
         const { data, error } = await supabaseClient.storage
             .from("fotos")
             .upload(fileName, file, {
@@ -103,22 +80,20 @@ async function subirImagen(file, index) {
             });
         
         if (error) {
-            console.error(`❌ Error subiendo imagen ${index + 1}:`, error);
+            console.error("❌ Error en upload:", error);
             return null;
         }
-        
-        console.log(`✅ Imagen ${index + 1} subida correctamente:`, data);
         
         // Obtener URL pública
         const { data: urlData } = supabaseClient.storage
             .from("fotos")
             .getPublicUrl(fileName);
         
-        console.log(`🔗 URL pública: ${urlData.publicUrl}`);
+        console.log(`✅ Imagen ${index + 1} subida: ${urlData.publicUrl}`);
         return urlData.publicUrl;
         
     } catch (error) {
-        console.error(`❌ Error en subida de imagen ${index + 1}:`, error);
+        console.error(`❌ Error subiendo imagen ${index + 1}:`, error);
         return null;
     }
 }
@@ -130,26 +105,25 @@ async function subirImagenes(files) {
         return [];
     }
     
-    console.log(`📸 Iniciando subida de ${files.length} imagen(es)...`);
+    console.log(`📸 Subiendo ${files.length} imagen(es)...`);
     const urls = [];
-    let subidasExitosas = 0;
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        
+        // Mostrar progreso
         mostrarMensaje(`📸 Subiendo imagen ${i + 1} de ${files.length}...`, "info");
+        
         const url = await subirImagen(file, i);
         if (url) {
             urls.push(url);
-            subidasExitosas++;
-        } else {
-            console.error(`❌ Falló subida de imagen ${i + 1}`);
         }
+        
+        // Pequeña pausa entre subidas para no saturar
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    console.log(`📸 Resultado: ${subidasExitosas} de ${files.length} imágenes subidas`);
-    if (urls.length > 0) {
-        console.log("📸 URLs obtenidas:", urls);
-    }
+    console.log(`📸 Subidas completadas: ${urls.length} de ${files.length}`);
     return urls;
 }
 
@@ -230,11 +204,9 @@ form.addEventListener("submit", async (e) => {
         let fotosUrls = [];
         if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
             console.log(`📸 Se encontraron ${fotosInput.files.length} imagen(es)`);
-            console.log("📸 Nombres de archivos:", Array.from(fotosInput.files).map(f => f.name));
-            mostrarMensaje(`📸 Subiendo ${fotosInput.files.length} imagen(es)...`, "info");
             submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
             fotosUrls = await subirImagenes(fotosInput.files);
-            console.log("📸 URLs finales obtenidas:", fotosUrls);
+            console.log("📸 URLs obtenidas:", fotosUrls);
         } else {
             console.log("📸 No hay imágenes seleccionadas");
         }
@@ -265,7 +237,6 @@ form.addEventListener("submit", async (e) => {
         };
         
         console.log("💾 Guardando pedido en Supabase...");
-        console.log("📦 Datos a guardar:", JSON.stringify(datos, null, 2));
         submitBtn.textContent = "⏳ Guardando pedido...";
         
         // Guardar en Supabase
@@ -303,13 +274,6 @@ form.addEventListener("submit", async (e) => {
                 <input type="file" id="fotos" multiple accept="image/*">`;
             fileLabel.style.background = "";
             fileLabel.style.borderColor = "";
-            // Reasignar el evento al nuevo input
-            const newInput = document.getElementById("fotos");
-            if (newInput) {
-                newInput.addEventListener("change", function() {
-                    actualizarLabelFotos(this);
-                });
-            }
         }
         
         // Pequeño delay antes de redirigir
@@ -351,8 +315,5 @@ if (fotosInputInicial) {
 if (pagoInput && pagoInput.value) {
     actualizarEnvio();
 }
-
-// Ejecutar diagnóstico al cargar
-verificarBucket();
 
 console.log("🚀 App de pedidos lista");
