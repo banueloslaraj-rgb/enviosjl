@@ -13,23 +13,33 @@ function generarCodigo() {
 async function subirArchivo(file, carpeta, nombreArchivo) {
     if (!file) return null;
     
-    const extension = file.name.split('.').pop();
+    // Limpiar nombre del archivo
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const extension = cleanName.split('.').pop();
     const fileName = `${carpeta}/${Date.now()}-${nombreArchivo}.${extension}`;
     
-    const { error } = await supabase.storage
-        .from("repartidores")
-        .upload(fileName, file);
-    
-    if (error) {
-        console.error("Error subiendo archivo:", error);
+    try {
+        const { error } = await supabase.storage
+            .from("repartidores")
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+        
+        if (error) {
+            console.error("Error subiendo archivo:", error);
+            return null;
+        }
+        
+        const { data } = supabase.storage
+            .from("repartidores")
+            .getPublicUrl(fileName);
+        
+        return data.publicUrl;
+    } catch (error) {
+        console.error("Error en subida:", error);
         return null;
     }
-    
-    const { data } = supabase.storage
-        .from("repartidores")
-        .getPublicUrl(fileName);
-    
-    return data.publicUrl;
 }
 
 // Mostrar mensaje
@@ -63,7 +73,7 @@ Una vez aprobado, podrás empezar a recibir pedidos.
 
 ¡Gracias por unirte al equipo! 🛵`;
 
-    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+    const url = `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
 }
 
@@ -101,34 +111,32 @@ ${repartidor.licencia ? "✅ Licencia de conducir" : "⚠️ Licencia no subida 
 // Configurar eventos de archivos
 function setupFileInputs() {
     const inputs = [
-        { id: 'credencialFrente' },
-        { id: 'credencialReverso' },
-        { id: 'comprobanteDomicilio' },
-        { id: 'licencia' },
-        { id: 'fotoVehiculo' },
-        { id: 'fotoPlacas' }
+        { id: 'credencialFrente', label: 'Credencial frente' },
+        { id: 'credencialReverso', label: 'Credencial reverso' },
+        { id: 'comprobanteDomicilio', label: 'Comprobante' },
+        { id: 'licencia', label: 'Licencia' },
+        { id: 'fotoVehiculo', label: 'Foto vehículo' },
+        { id: 'fotoPlacas', label: 'Foto placas' }
     ];
     
-    inputs.forEach(({ id }) => {
+    inputs.forEach(({ id, label }) => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('change', function() {
-                const label = this.closest('.file-label');
+                const labelElement = this.closest('.file-label');
                 if (this.files && this.files[0]) {
                     const fileName = this.files[0].name;
-                    const existingSpan = label.querySelector('.file-name');
-                    if (existingSpan) {
-                        existingSpan.textContent = fileName;
-                    } else {
-                        const span = document.createElement('span');
-                        span.className = 'file-name';
-                        span.textContent = fileName;
-                        span.style.display = 'block';
-                        span.style.fontSize = '11px';
-                        span.style.color = '#27ae60';
-                        span.style.marginTop = '5px';
-                        label.appendChild(span);
+                    let existingSpan = labelElement.querySelector('.file-name');
+                    if (!existingSpan) {
+                        existingSpan = document.createElement('span');
+                        existingSpan.className = 'file-name';
+                        labelElement.appendChild(existingSpan);
                     }
+                    existingSpan.textContent = `✅ ${fileName.substring(0, 30)}${fileName.length > 30 ? '...' : ''}`;
+                    existingSpan.style.color = '#27ae60';
+                } else {
+                    const existingSpan = labelElement.querySelector('.file-name');
+                    if (existingSpan) existingSpan.remove();
                 }
             });
         }
@@ -160,11 +168,11 @@ form.addEventListener('submit', async (e) => {
         const colorVehiculo = document.getElementById('colorVehiculo').value.trim();
         
         // Validaciones
-        if (!nombre) throw new Error("Nombre completo requerido");
-        if (!telefono) throw new Error("Teléfono requerido");
-        if (!/^\d{10}$/.test(telefono)) throw new Error("El teléfono debe tener 10 dígitos");
-        if (!marcaVehiculo) throw new Error("Marca y modelo requerido");
-        if (!colorVehiculo) throw new Error("Color del vehículo requerido");
+        if (!nombre) throw new Error("👤 Nombre completo requerido");
+        if (!telefono) throw new Error("📞 Teléfono requerido");
+        if (!/^\d{10}$/.test(telefono)) throw new Error("📞 El teléfono debe tener 10 dígitos");
+        if (!marcaVehiculo) throw new Error("🚘 Marca y modelo requerido");
+        if (!colorVehiculo) throw new Error("🎨 Color del vehículo requerido");
         
         // Obtener archivos
         const credFrente = document.getElementById('credencialFrente').files[0];
@@ -175,15 +183,17 @@ form.addEventListener('submit', async (e) => {
         const fotoPlacas = document.getElementById('fotoPlacas').files[0];
         
         // Validar archivos requeridos
-        if (!credFrente) throw new Error("Credencial (Frente) es requerida");
-        if (!credReverso) throw new Error("Credencial (Reverso) es requerida");
-        if (!comprobante) throw new Error("Comprobante de domicilio requerido");
-        if (!fotoVehiculo) throw new Error("Foto del vehículo requerida");
-        if (!fotoPlacas) throw new Error("Foto de placas requerida");
+        if (!credFrente) throw new Error("🪪 Credencial (Frente) es requerida");
+        if (!credReverso) throw new Error("🪪 Credencial (Reverso) es requerida");
+        if (!comprobante) throw new Error("🏠 Comprobante de domicilio requerido");
+        if (!fotoVehiculo) throw new Error("📸 Foto del vehículo requerida");
+        if (!fotoPlacas) throw new Error("🔢 Foto de placas requerida");
         
         mostrarMensaje("📤 Subiendo documentos...", "info");
         
         // Subir archivos
+        submitBtn.textContent = "⏳ Subiendo documentos...";
+        
         const [urlFrente, urlReverso, urlComprobante, urlLicencia, urlFotoVehi, urlFotoPlac] = await Promise.all([
             subirArchivo(credFrente, 'credenciales', `frente_${telefono}`),
             subirArchivo(credReverso, 'credenciales', `reverso_${telefono}`),
@@ -193,11 +203,18 @@ form.addEventListener('submit', async (e) => {
             subirArchivo(fotoPlacas, 'placas', `placas_${telefono}`)
         ]);
         
+        // Verificar que los archivos requeridos se subieron correctamente
+        if (!urlFrente || !urlReverso || !urlComprobante || !urlFotoVehi || !urlFotoPlac) {
+            throw new Error("❌ Error al subir documentos. Intenta de nuevo.");
+        }
+        
         // Generar código único
+        submitBtn.textContent = "⏳ Generando código...";
         let codigo = generarCodigo();
         let esUnico = false;
+        let intentos = 0;
         
-        while (!esUnico) {
+        while (!esUnico && intentos < 10) {
             const { data: existe } = await supabase
                 .from("repartidores")
                 .select("codigo")
@@ -208,10 +225,13 @@ form.addEventListener('submit', async (e) => {
                 esUnico = true;
             } else {
                 codigo = generarCodigo();
+                intentos++;
             }
         }
         
         // Crear registro
+        submitBtn.textContent = "⏳ Guardando registro...";
+        
         const datosRepartidor = {
             nombre_completo: nombre,
             telefono: telefono,
@@ -234,6 +254,7 @@ form.addEventListener('submit', async (e) => {
             .insert([datosRepartidor]);
         
         if (insertError) {
+            console.error("Error insert:", insertError);
             throw new Error(insertError.message);
         }
         
@@ -241,7 +262,7 @@ form.addEventListener('submit', async (e) => {
         const mensajeDiv = document.getElementById('mensaje');
         mensajeDiv.innerHTML = `
             ✅ ¡Registro exitoso!<br><br>
-            <strong style="font-size: 24px; color: #27ae60;">${codigo}</strong><br><br>
+            <strong style="font-size: 32px; color: #27ae60; display: block; margin: 10px 0;">${codigo}</strong><br>
             📱 Te hemos enviado tu código por WhatsApp.<br>
             ⚠️ Guarda este código, lo necesitarás para iniciar sesión.<br>
             Tu registro será revisado por el administrador.
@@ -250,6 +271,7 @@ form.addEventListener('submit', async (e) => {
         mensajeDiv.style.display = 'block';
         
         // Enviar WhatsApp al repartidor
+        submitBtn.textContent = "⏳ Enviando WhatsApp...";
         await enviarWhatsAppRepartidor(telefono, nombre, codigo);
         
         // Enviar WhatsApp al administrador
@@ -258,10 +280,15 @@ form.addEventListener('submit', async (e) => {
         // Limpiar formulario
         form.reset();
         
+        // Limpiar nombres de archivos mostrados
+        document.querySelectorAll('.file-name').forEach(span => span.remove());
+        
+        submitBtn.textContent = "✅ Registro completo!";
+        
         // Redirigir después de 5 segundos
         setTimeout(() => {
             window.location.href = 'login-repartidor.html';
-        }, 6000);
+        }, 5000);
         
     } catch (error) {
         console.error("Error:", error);
