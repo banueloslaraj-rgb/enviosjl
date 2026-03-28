@@ -1,3 +1,20 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f1f3f6;
+    margin: 0;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+}
+
 /* Header con información del repartidor */
 .header-info {
     text-align: center;
@@ -54,13 +71,168 @@
     transform: scale(0.98);
 }
 
-/* Estado en camino - color especial */
+/* Tarjetas de pedidos */
+.card {
+    background: white;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card.estado-pendiente {
+    background: linear-gradient(135deg, #ffffff 0%, #d4edda 100%);
+    border-left: 6px solid #28a745;
+}
+
+.card.estado-asignado {
+    background: linear-gradient(135deg, #ffffff 0%, #cce5ff 100%);
+    border-left: 6px solid #007bff;
+}
+
 .card.estado-en-camino {
     background: linear-gradient(135deg, #ffffff 0%, #d1ecf1 100%);
     border-left: 6px solid #17a2b8;
 }
 
-/* Botones de acción mejorados */
+.card.estado-entregado {
+    background: #f8f9fa;
+    border-left: 6px solid #6c757d;
+    opacity: 0.9;
+}
+
+.pedido-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #27ae60;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pedido-header strong {
+    font-size: 16px;
+    color: #333;
+}
+
+.pedido-fecha {
+    font-size: 11px;
+    color: #666;
+    background: #f0f0f0;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.card p {
+    margin: 8px 0;
+    line-height: 1.4;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.card p strong {
+    color: #555;
+    min-width: 100px;
+    display: inline-block;
+}
+
+/* Botones de mapa */
+.map-btn {
+    background: #007bff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    margin: 5px 0;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.map-btn:hover {
+    background: #0056b3;
+    transform: scale(1.02);
+}
+
+.map-btn:active {
+    transform: scale(0.98);
+}
+
+/* Botones de llamada */
+.btn-call {
+    display: inline-block;
+    margin: 5px 5px 5px 0;
+    padding: 8px 12px;
+    background: #27ae60;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.btn-call:hover {
+    background: #219a52;
+    transform: scale(1.02);
+}
+
+.btn-call:active {
+    transform: scale(0.98);
+}
+
+/* Contenedor de imágenes */
+.imagenes {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.imagenes strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #555;
+}
+
+.imagenes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.imagenes img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+.imagenes img:active {
+    transform: scale(0.95);
+}
+
+/* Estado texto */
+.estado-texto {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+    background: #f0f0f0;
+}
+
+/* Botones de acción */
 .botones-accion {
     display: flex;
     gap: 10px;
@@ -74,8 +246,110 @@
     padding: 10px;
     font-size: 14px;
     font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
 }
 
 .botones-accion button:active {
     transform: scale(0.98);
+}
+
+/* Botón WhatsApp flotante */
+.wpp-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #25D366;
+    color: white;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 28px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.wpp-btn:active {
+    transform: scale(0.95);
+}
+
+/* Loader */
+.loader {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: #27ae60;
+}
+
+/* Responsive para móviles */
+@media (max-width: 600px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        padding: 5px;
+    }
+    
+    .card {
+        padding: 12px;
+    }
+    
+    .pedido-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .card p strong {
+        min-width: 85px;
+    }
+    
+    .botones-accion {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .botones-accion button {
+        width: 100%;
+    }
+    
+    .imagenes img {
+        width: 65px;
+        height: 65px;
+    }
+    
+    .btn-call {
+        display: block;
+        text-align: center;
+        margin: 5px 0;
+    }
+    
+    .repartidor-bienvenida {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .btn-cerrar-sesion {
+        width: 100%;
+    }
+}
+
+/* Mejoras específicas para iOS */
+@supports (-webkit-touch-callout: none) {
+    .imagenes img {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+    
+    button, .btn-call, .map-btn {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+    }
 }
