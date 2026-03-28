@@ -57,15 +57,13 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
-// 🔄 ACTUALIZAR ESTADO DE PEDIDO - CORREGIDO PARA UUID
+// 🔄 ACTUALIZAR ESTADO DE PEDIDO
 async function actualizarEstadoPedido(id) {
     console.log("🔴 FUNCIÓN LLAMADA - ID:", id);
     
-    // Crear un ID válido para el select (reemplazar guiones)
     const selectId = `estado-${id}`;
     console.log("🔍 Buscando select con ID:", selectId);
     
-    // Obtener el select
     const selectElement = document.getElementById(selectId);
     if (!selectElement) {
         console.error("❌ No se encontró el select para ID:", selectId);
@@ -76,27 +74,13 @@ async function actualizarEstadoPedido(id) {
     const nuevoEstado = selectElement.value;
     console.log("📊 Nuevo estado seleccionado:", nuevoEstado);
     
-    // Confirmar con el usuario
     const confirmar = confirm(`¿Cambiar estado del pedido a "${nuevoEstado}"?`);
     if (!confirmar) {
         console.log("❌ Usuario canceló");
         return;
     }
     
-    // Buscar el botón
     const btn = event ? event.target : document.querySelector(`button[onclick*="actualizarEstadoPedido('${id}']`);
-    if (!btn) {
-        console.error("❌ No se encontró el botón");
-        // Intentar encontrar por texto alternativo
-        const buttons = document.querySelectorAll('button');
-        for (let b of buttons) {
-            if (b.innerText.includes('Actualizar estado')) {
-                // No podemos identificar cuál es, así que usamos el que está más cerca
-                console.log("⚠️ Usando botón alternativo");
-            }
-        }
-    }
-    
     const textoOriginal = btn ? btn.innerText : "Actualizar estado";
     if (btn) {
         btn.innerText = "⏳ Actualizando...";
@@ -104,22 +88,17 @@ async function actualizarEstadoPedido(id) {
     }
     
     try {
-        // Actualizar en Supabase
         const { data, error } = await supabaseClient
             .from("pedidos")
             .update({ estado: nuevoEstado })
             .eq("id", id)
             .select();
         
-        if (error) {
-            console.error("❌ Error de Supabase:", error);
-            throw new Error(error.message);
-        }
+        if (error) throw new Error(error.message);
         
         console.log("✅ Estado actualizado correctamente:", data);
         alert("✅ Estado actualizado correctamente!");
         
-        // Recargar la lista de pedidos
         setTimeout(() => {
             cargarPedidos();
         }, 1000);
@@ -160,7 +139,6 @@ async function cargarPedidos() {
             return;
         }
         
-        // Actualizar contador
         const statNumber = document.querySelector('.stat-card:first-child .stat-number');
         if (statNumber) statNumber.textContent = data.length;
         
@@ -170,7 +148,6 @@ async function cargarPedidos() {
             const card = document.createElement("div");
             card.className = `card ${getEstadoClass(p.estado)}`;
             
-            // Formatear fecha
             let fechaFormateada = "Sin fecha";
             if (p.fecha) {
                 try {
@@ -187,7 +164,6 @@ async function cargarPedidos() {
                 } catch (e) {}
             }
             
-            // Imágenes
             let imagenesHtml = '';
             if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
                 imagenesHtml = `
@@ -200,7 +176,6 @@ async function cargarPedidos() {
                 `;
             }
             
-            // IMPORTANTE: Usar el ID completo con comillas simples para UUID
             card.innerHTML = `
                 <div class="pedido-id">
                     🆔 Pedido #${p.id.substring(0, 8)}...
@@ -270,7 +245,6 @@ async function cargarRepartidores() {
             return;
         }
         
-        // Actualizar contadores
         const activos = data.filter(r => r.estado === "activo").length;
         const statCards = document.querySelectorAll('.stat-card');
         if (statCards.length >= 2) {
@@ -358,7 +332,7 @@ async function cargarRepartidores() {
     }
 }
 
-// 🔄 Actualizar estado de repartidor - CON URL CORREGIDA
+// 🔄 Actualizar estado de repartidor - VERSIÓN PARA MÓVIL
 async function actualizarEstadoRepartidor(id) {
     const selectElement = document.getElementById(`estado-rep-${id}`);
     if (!selectElement) return;
@@ -387,22 +361,30 @@ async function actualizarEstadoRepartidor(id) {
         
         btn.innerText = "✅ Actualizado";
         
-        // URL CORRECTA para el repartidor
         const loginUrl = "https://banueloslaraj-rgb.github.io/enviosjl/login-repartidor.html";
         
         if (estado === "activo" && repartidor && repartidor.telefono) {
             const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${loginUrl}\n\n¡Bienvenido al equipo! 🛵`;
-            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+            const whatsappUrl = `https://wa.me/52${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Usar window.location.href para móviles
+            setTimeout(() => {
+                window.location.href = whatsappUrl;
+            }, 500);
         }
         
         if (estado === "rechazado" && repartidor && repartidor.telefono) {
             const mensaje = `❌ *ACTUALIZACIÓN DE REGISTRO* ❌\n\nHola ${repartidor.nombre_completo}, lamentamos informarte que tu registro como repartidor ha sido *RECHAZADO*.\n\nPor favor contacta al administrador para más información.`;
-            window.open(`https://wa.me/${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+            const whatsappUrl = `https://wa.me/52${repartidor.telefono}?text=${encodeURIComponent(mensaje)}`;
+            
+            setTimeout(() => {
+                window.location.href = whatsappUrl;
+            }, 500);
         }
         
         setTimeout(() => {
             cargarRepartidores();
-        }, 1000);
+        }, 2000);
         
     } catch (error) {
         alert("❌ Error al actualizar estado");
