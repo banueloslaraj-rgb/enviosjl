@@ -315,13 +315,13 @@ async function cargarPedidos() {
                 (p.estado === "asignado" || p.estado === "en camino")
             );
         } else if (filtroActual === "entregado") {
-            // Solo sus pedidos entregados
+            // SOLO SUS PEDIDOS ENTREGADOS (historial personal)
             pedidosMostrar = data.filter(p => 
                 p.repartidor_id === repartidorId && p.estado === "entregado"
             );
         }
         
-        // Contar pendientes disponibles
+        // Contar pendientes disponibles (para el badge)
         const pendientesDisponibles = data.filter(p => p.estado === "pendiente").length;
         if (pendientesCountSpan) pendientesCountSpan.textContent = pendientesDisponibles;
         
