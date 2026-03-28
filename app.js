@@ -1,3 +1,4 @@
+// Configuración de Supabase
 const SUPABASE_URL = "https://pknqqaxiqdllsygjctmb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrbnFxYXhpcWRsbHN5Z2pjdG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDY0MDEsImV4cCI6MjA5MDEyMjQwMX0.o3XrQk2xgN7F9qfHVVg1Ixz5ZYPQ_edZe9-jAENgiTc";
 
@@ -35,12 +36,6 @@ function actualizarEnvio() {
     document.getElementById("envioCalculado").value = `$${envio} aprox (${distancia} km)`;
 }
 
-// Configurar evento del campo pago
-const pagoInput = document.getElementById("pago");
-if (pagoInput) {
-    pagoInput.addEventListener("input", actualizarEnvio);
-}
-
 // Función para mostrar mensaje
 function mostrarMensaje(texto, tipo) {
     const mensajeDiv = document.getElementById("mensaje");
@@ -57,21 +52,42 @@ function mostrarMensaje(texto, tipo) {
     }, 5000);
 }
 
-// Función para subir una imagen individual
+// Función mejorada para subir una imagen individual
 async function subirImagen(file, index) {
-    if (!file) return null;
+    if (!file) {
+        console.log(`❌ Archivo ${index} no existe`);
+        return null;
+    }
     
-    // Generar nombre único para el archivo
+    console.log(`📤 Procesando imagen ${index + 1}:`);
+    console.log(`   - Nombre original: ${file.name}`);
+    console.log(`   - Tipo: ${file.type}`);
+    console.log(`   - Tamaño: ${(file.size / 1024).toFixed(2)} KB`);
+    
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+        console.error(`❌ Archivo no es una imagen: ${file.type}`);
+        mostrarMensaje(`❌ ${file.name} no es una imagen válida`, "error");
+        return null;
+    }
+    
+    // Validar tamaño máximo (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        console.error(`❌ Archivo muy grande: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        mostrarMensaje(`❌ ${file.name} excede el límite de 5MB`, "error");
+        return null;
+    }
+    
+    // Generar nombre único
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 10000);
-    // Limpiar nombre del archivo
     const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `pedido_${timestamp}_${random}_${index}_${cleanName}`;
     
-    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB`);
+    console.log(`📤 Subiendo a Supabase: ${fileName}`);
     
     try {
-        // Subir a Supabase Storage
+        // Intentar subir
         const { data, error } = await supabaseClient.storage
             .from("fotos")
             .upload(fileName, file, {
@@ -81,47 +97,81 @@ async function subirImagen(file, index) {
             });
         
         if (error) {
-            console.error("❌ Error en upload:", error);
+            console.error("❌ Error detallado en upload:", error);
+            console.error("   - Mensaje:", error.message);
+            console.error("   - Status:", error.statusCode);
+            
+            // Manejar errores específicos
+            if (error.message.includes("bucket not found")) {
+                mostrarMensaje("❌ El bucket 'fotos' no existe en Supabase. Contacta al administrador.", "error");
+            } else if (error.message.includes("permission") || error.message.includes("JWT")) {
+                mostrarMensaje("❌ Error de permisos en Supabase. Verifica la clave de API.", "error");
+            } else if (error.message.includes("row-level security")) {
+                mostrarMensaje("❌ Error de políticas de seguridad. No se pueden subir imágenes.", "error");
+            } else {
+                mostrarMensaje(`❌ Error al subir imagen: ${error.message}`, "error");
+            }
+            
             return null;
         }
         
-        console.log(`✅ Imagen ${index + 1} subida correctamente`);
+        console.log(`✅ Imagen ${index + 1} subida exitosamente`);
+        console.log(`   - Path: ${data.path}`);
         
         // Obtener URL pública
         const { data: urlData } = supabaseClient.storage
             .from("fotos")
             .getPublicUrl(fileName);
         
-        console.log(`🔗 URL: ${urlData.publicUrl}`);
+        console.log(`🔗 URL pública: ${urlData.publicUrl}`);
+        
+        // Verificar que la URL sea accesible
+        try {
+            const testResponse = await fetch(urlData.publicUrl, { method: 'HEAD' });
+            if (testResponse.ok) {
+                console.log(`✅ URL accesible`);
+            } else {
+                console.warn(`⚠️ URL generada pero no accesible: ${testResponse.status}`);
+            }
+        } catch (err) {
+            console.warn(`⚠️ No se pudo verificar la URL: ${err.message}`);
+        }
+        
         return urlData.publicUrl;
         
     } catch (error) {
-        console.error(`❌ Error subiendo imagen ${index + 1}:`, error);
+        console.error(`❌ Error en subida de imagen ${index + 1}:`, error);
+        console.error("Stack trace:", error.stack);
+        mostrarMensaje(`❌ Error al subir ${file.name}: ${error.message}`, "error");
         return null;
     }
 }
 
-// Función para subir múltiples imágenes
+// Función mejorada para subir múltiples imágenes
 async function subirImagenes(files) {
     if (!files || files.length === 0) {
         console.log("📸 No hay imágenes para subir");
         return [];
     }
     
-    console.log(`📸 Iniciando subida de ${files.length} imagen(es)...`);
-    console.log("📸 Nombres de archivos:", Array.from(files).map(f => f.name));
+    console.log(`📸 ========== INICIANDO SUBIDA DE ${files.length} IMÁGENES ==========`);
     
     const urls = [];
+    let exitosas = 0;
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
         // Mostrar progreso
-        mostrarMensaje(`📸 Subiendo imagen ${i + 1} de ${files.length}...`, "info");
+        mostrarMensaje(`📸 Subiendo imagen ${i + 1} de ${files.length}: ${file.name}...`, "info");
         
         const url = await subirImagen(file, i);
         if (url) {
             urls.push(url);
+            exitosas++;
+            console.log(`✅ Imagen ${i + 1} completada (${exitosas}/${files.length})`);
+        } else {
+            console.error(`❌ Imagen ${i + 1} falló`);
         }
         
         // Pequeña pausa entre subidas
@@ -130,8 +180,16 @@ async function subirImagenes(files) {
         }
     }
     
-    console.log(`📸 Subidas completadas: ${urls.length} de ${files.length}`);
-    console.log("📸 URLs finales:", urls);
+    console.log(`📸 ========== SUBIDA COMPLETADA ==========`);
+    console.log(`   ✅ Exitosas: ${exitosas}/${files.length}`);
+    console.log(`   📋 URLs:`, urls);
+    
+    if (exitosas === 0 && files.length > 0) {
+        mostrarMensaje("❌ No se pudo subir ninguna imagen. Verifica la consola para más detalles.", "error");
+    } else if (exitosas < files.length) {
+        mostrarMensaje(`⚠️ Se subieron ${exitosas} de ${files.length} imágenes. Algunas fallaron.`, "error");
+    }
+    
     return urls;
 }
 
@@ -147,6 +205,12 @@ function actualizarLabelFotos(input) {
         fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) ✅`;
         fileLabel.style.background = "#d4edda";
         fileLabel.style.borderColor = "#28a745";
+        
+        // Mostrar nombres de archivos seleccionados
+        console.log("📸 Archivos seleccionados:");
+        for (let i = 0; i < input.files.length; i++) {
+            console.log(`   ${i + 1}. ${input.files[i].name} (${(input.files[i].size / 1024).toFixed(2)} KB)`);
+        }
     } else {
         fileLabel.innerHTML = `📸 Subir fotos
             <input type="file" id="fotos" multiple accept="image/*">`;
@@ -162,6 +226,118 @@ function actualizarLabelFotos(input) {
     }
 }
 
+// Función de diagnóstico para verificar Supabase
+async function diagnosticarSupabase() {
+    console.log("🔍 ========== DIAGNÓSTICO DE SUPABASE ==========");
+    
+    // 1. Verificar conexión a la tabla pedidos
+    console.log("\n1️⃣ Verificando tabla 'pedidos':");
+    try {
+        const { data, error, count } = await supabaseClient
+            .from("pedidos")
+            .select("*", { count: 'exact', head: true });
+        
+        if (error) {
+            console.error("❌ Error en tabla pedidos:", error.message);
+        } else {
+            console.log("✅ Tabla 'pedidos' accesible");
+            console.log(`   📊 Total de registros: ${count}`);
+        }
+    } catch (err) {
+        console.error("❌ Excepción al verificar pedidos:", err.message);
+    }
+    
+    // 2. Listar buckets disponibles
+    console.log("\n2️⃣ Verificando buckets de Storage:");
+    try {
+        const { data: buckets, error } = await supabaseClient.storage.listBuckets();
+        
+        if (error) {
+            console.error("❌ Error al listar buckets:", error.message);
+            console.error("   Detalle:", error);
+        } else {
+            console.log("✅ Buckets disponibles:");
+            if (buckets && buckets.length > 0) {
+                buckets.forEach(bucket => {
+                    console.log(`   📁 ${bucket.name} (${bucket.public ? 'público' : 'privado'})`);
+                });
+            } else {
+                console.log("   No hay buckets disponibles");
+            }
+            
+            const fotosBucket = buckets ? buckets.find(b => b.name === "fotos") : null;
+            if (fotosBucket) {
+                console.log("✅✅✅ Bucket 'fotos' EXISTE");
+                console.log(`   - ID: ${fotosBucket.id}`);
+                console.log(`   - Público: ${fotosBucket.public}`);
+            } else {
+                console.error("❌❌❌ Bucket 'fotos' NO EXISTE");
+                console.error("   🔴 SOLUCIÓN: Debes crearlo en Supabase Dashboard > Storage");
+                console.error("   1. Ve a https://supabase.com/dashboard");
+                console.error("   2. Selecciona tu proyecto");
+                console.error("   3. Ve a Storage > Create new bucket");
+                console.error("   4. Nombre: 'fotos'");
+                console.error("   5. Marca 'Public bucket'");
+            }
+        }
+    } catch (err) {
+        console.error("❌ Excepción al listar buckets:", err.message);
+    }
+    
+    // 3. Probar subida con archivo de prueba
+    console.log("\n3️⃣ Probando subida con archivo de prueba:");
+    try {
+        const testBlob = new Blob(["test content"], { type: "text/plain" });
+        const testFileName = `test_${Date.now()}.txt`;
+        
+        const { data, error } = await supabaseClient.storage
+            .from("fotos")
+            .upload(testFileName, testBlob, {
+                cacheControl: '3600',
+                upsert: false
+            });
+        
+        if (error) {
+            console.error("❌ Error en subida de prueba:", error.message);
+            console.error("   Código:", error.statusCode);
+            
+            if (error.message.includes("bucket not found")) {
+                console.error("   🔴 SOLUCIÓN: Crea el bucket 'fotos' en Supabase como se indicó arriba");
+            } else if (error.message.includes("permission denied")) {
+                console.error("   🔴 SOLUCIÓN: Verifica las políticas de seguridad del bucket");
+                console.error("   Debes agregar una política que permita INSERT a anon");
+            } else if (error.message.includes("JWT")) {
+                console.error("   🔴 SOLUCIÓN: La clave de API puede ser incorrecta o expiró");
+            }
+        } else {
+            console.log("✅ Subida de prueba exitosa");
+            console.log(`   Path: ${data.path}`);
+            
+            // Limpiar archivo de prueba
+            const { error: removeError } = await supabaseClient.storage
+                .from("fotos")
+                .remove([testFileName]);
+            
+            if (removeError) {
+                console.warn("   ⚠️ No se pudo eliminar el archivo de prueba:", removeError.message);
+            } else {
+                console.log("   🧹 Archivo de prueba eliminado");
+            }
+        }
+    } catch (err) {
+        console.error("❌ Excepción en subida de prueba:", err.message);
+    }
+    
+    console.log("\n🔍 ========== FIN DIAGNÓSTICO ==========");
+}
+
+// Configurar evento del campo pago
+const pagoInput = document.getElementById("pago");
+if (pagoInput) {
+    pagoInput.addEventListener("input", actualizarEnvio);
+}
+
+// Evento principal del formulario
 const form = document.getElementById("pedidoForm");
 
 form.addEventListener("submit", async (e) => {
@@ -206,7 +382,7 @@ form.addEventListener("submit", async (e) => {
             console.log("fotosInput.files:", fotosInput.files);
             console.log("Cantidad de archivos:", fotosInput.files.length);
             for (let i = 0; i < fotosInput.files.length; i++) {
-                console.log(`Archivo ${i}:`, fotosInput.files[i].name, `${(fotosInput.files[i].size / 1024).toFixed(2)} KB`);
+                console.log(`Archivo ${i}:`, fotosInput.files[i].name, `${(fotosInput.files[i].size / 1024).toFixed(2)} KB`, fotosInput.files[i].type);
             }
         }
         
@@ -227,6 +403,11 @@ form.addEventListener("submit", async (e) => {
             submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
             fotosUrls = await subirImagenes(fotosInput.files);
             console.log("📸 URLs finales obtenidas:", fotosUrls);
+            
+            // Verificar si se subieron todas las imágenes
+            if (fotosUrls.length !== fotosInput.files.length) {
+                console.warn(`⚠️ Solo se subieron ${fotosUrls.length} de ${fotosInput.files.length} imágenes`);
+            }
         } else {
             console.log("📸 No hay imágenes seleccionadas - continuando sin fotos");
         }
@@ -274,13 +455,23 @@ form.addEventListener("submit", async (e) => {
         console.log("✅ Pedido guardado exitosamente:", pedidoGuardado);
         
         // Preparar mensaje para WhatsApp
-        const texto = `🚚 Nuevo pedido
-📍 ${datos.recoleccion} → ${datos.entrega}
-👤 ${datos.remitente} (${datos.tel_remitente})
-👤 ${datos.destinatario} (${datos.tel_destinatario})
-📦 ${datos.descripcion}
-💰 $${datos.precio}
-🚚 Envío: ${datos.envio}`;
+        let texto = `🚚 *NUEVO PEDIDO* 🚚\n\n`;
+        texto += `📍 *Recolección:* ${datos.recoleccion}\n`;
+        texto += `📍 *Entrega:* ${datos.entrega}\n\n`;
+        texto += `👤 *Remitente:* ${datos.remitente}\n`;
+        texto += `📞 *Teléfono:* ${datos.tel_remitente}\n\n`;
+        texto += `👤 *Destinatario:* ${datos.destinatario}\n`;
+        texto += `📞 *Teléfono:* ${datos.tel_destinatario}\n\n`;
+        texto += `📦 *Descripción:* ${datos.descripcion}\n\n`;
+        texto += `💰 *Pago producto:* $${datos.precio}\n`;
+        texto += `🚚 *Costo envío:* ${datos.envio}\n\n`;
+        
+        if (fotosUrls.length > 0) {
+            texto += `📸 *Fotos:* ${fotosUrls.length} imagen(es) subida(s)\n`;
+            texto += `🔗 Ver en panel admin: ${window.location.origin}/admin.html\n`;
+        }
+        
+        texto += `\n🕐 *Fecha:* ${new Date(datos.fecha).toLocaleString()}`;
         
         // Mostrar mensaje de éxito
         mostrarMensaje("✅ ¡Pedido enviado con éxito! Redirigiendo a WhatsApp...", "success");
@@ -295,6 +486,14 @@ form.addEventListener("submit", async (e) => {
                 <input type="file" id="fotos" multiple accept="image/*">`;
             fileLabel.style.background = "";
             fileLabel.style.borderColor = "";
+            
+            // Reasignar evento al nuevo input
+            const newFotosInput = document.getElementById("fotos");
+            if (newFotosInput) {
+                newFotosInput.addEventListener("change", function() {
+                    actualizarLabelFotos(this);
+                });
+            }
         }
         
         // Pequeño delay antes de redirigir
@@ -339,4 +538,8 @@ if (pagoInput && pagoInput.value) {
     actualizarEnvio();
 }
 
-console.log("🚀 App de pedidos lista");
+// Ejecutar diagnóstico automáticamente después de cargar la página
+setTimeout(() => {
+    console.log("🚀 App de pedidos lista");
+    diagnosticarSupabase();
+}, 1000);
