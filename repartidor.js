@@ -9,7 +9,7 @@ let repartidorNombre = null;
 let repartidorTelefono = null;
 let filtroActual = "todos";
 let intervaloActualizacion = null;
-let ultimaCantidadPedidos = 0;
+let ultimaCantidadPendientes = 0;
 let notificacionesActivas = true;
 
 // Elementos DOM
@@ -54,19 +54,21 @@ function mostrarNotificacion(mensaje, tipo = "info") {
     const notification = document.getElementById("notification");
     const messageSpan = document.getElementById("notification-message");
     
-    messageSpan.textContent = mensaje;
-    notification.classList.remove("hidden");
-    
-    const colors = {
-        info: "#27ae60",
-        warning: "#f39c12",
-        error: "#e74c3c"
-    };
-    notification.style.backgroundColor = colors[tipo] || colors.info;
-    
-    setTimeout(() => {
-        notification.classList.add("hidden");
-    }, 3000);
+    if (notification && messageSpan) {
+        messageSpan.textContent = mensaje;
+        notification.classList.remove("hidden");
+        
+        const colors = {
+            info: "#27ae60",
+            warning: "#f39c12",
+            error: "#e74c3c"
+        };
+        notification.style.backgroundColor = colors[tipo] || colors.info;
+        
+        setTimeout(() => {
+            notification.classList.add("hidden");
+        }, 3000);
+    }
 }
 
 // Actualizar estado de conexión
@@ -140,7 +142,6 @@ async function aceptarPedido(id, telefonoRemitente, nombreRemitente, direccionRe
             .eq("id", id)
             .single();
         
-        // Verificar que sigue disponible
         if (pedido.estado !== "pendiente") {
             mostrarMensajeRepartidor("⚠️ Este pedido ya fue aceptado por otro repartidor", false);
             btn.textContent = textoOriginal;
@@ -295,43 +296,60 @@ async function cargarPedidos() {
         
         if (error) throw error;
         
-        // Contar pendientes
-        const pendientes = data.filter(p => p.estado === "pendiente").length;
-        if (pendientesCountSpan) pendientesCountSpan.textContent = pendientes;
+        // Filtrar según la selección del repartidor
+        let pedidosMostrar = [];
         
-        // Verificar nuevos pedidos
-        if (pendientes > ultimaCantidadPedidos) {
-            mostrarNotificacion(`🔔 ${pendientes - ultimaCantidadPedidos} nuevo(s) pedido(s) disponible(s)`);
-            // Sonido opcional
+        if (filtroActual === "todos") {
+            // Todos: pendientes + sus pedidos activos (asignados/en camino)
+            pedidosMostrar = data.filter(p => 
+                p.estado === "pendiente" || 
+                (p.repartidor_id === repartidorId && (p.estado === "asignado" || p.estado === "en camino"))
+            );
+        } else if (filtroActual === "pendiente") {
+            // Solo pedidos pendientes disponibles
+            pedidosMostrar = data.filter(p => p.estado === "pendiente");
+        } else if (filtroActual === "asignado") {
+            // Sus pedidos activos (asignados y en camino)
+            pedidosMostrar = data.filter(p => 
+                p.repartidor_id === repartidorId && 
+                (p.estado === "asignado" || p.estado === "en camino")
+            );
+        } else if (filtroActual === "entregado") {
+            // Solo sus pedidos entregados
+            pedidosMostrar = data.filter(p => 
+                p.repartidor_id === repartidorId && p.estado === "entregado"
+            );
+        }
+        
+        // Contar pendientes disponibles
+        const pendientesDisponibles = data.filter(p => p.estado === "pendiente").length;
+        if (pendientesCountSpan) pendientesCountSpan.textContent = pendientesDisponibles;
+        
+        // Verificar nuevos pedidos pendientes
+        if (pendientesDisponibles > ultimaCantidadPendientes && filtroActual !== "entregado") {
+            mostrarNotificacion(`🔔 ${pendientesDisponibles - ultimaCantidadPendientes} nuevo(s) pedido(s) disponible(s)`);
             try {
                 const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
                 audio.volume = 0.3;
                 audio.play();
             } catch (e) {}
         }
-        ultimaCantidadPedidos = pendientes;
-        
-        // Filtrar según selección
-        let pedidosFiltrados = data;
-        if (filtroActual === "pendiente") {
-            pedidosFiltrados = data.filter(p => p.estado === "pendiente");
-        } else if (filtroActual === "asignado") {
-            pedidosFiltrados = data.filter(p => 
-                p.repartidor_id === repartidorId && 
-                (p.estado === "asignado" || p.estado === "en camino")
-            );
-        }
+        ultimaCantidadPendientes = pendientesDisponibles;
         
         actualizarTimestamp();
         
-        if (pedidosFiltrados.length === 0) {
-            contenedor.innerHTML = '<div style="text-align:center; padding:20px;">📭 No hay pedidos que mostrar</div>';
+        if (pedidosMostrar.length === 0) {
+            if (filtroActual === "entregado") {
+                contenedor.innerHTML = '<div style="text-align:center; padding:20px;">📭 No has entregado ningún pedido aún</div>';
+            } else {
+                contenedor.innerHTML = '<div style="text-align:center; padding:20px;">📭 No hay pedidos que mostrar</div>';
+            }
             return;
         }
         
         // Renderizar pedidos
         contenedor.innerHTML = "";
-        pedidosFiltrados.forEach(p => renderizarPedido(p));
+        pedidosMostrar.forEach(p => renderizarPedido(p));
         
     } catch (error) {
         console.error("Error:", error);
@@ -392,42 +410,45 @@ function renderizarPedido(p) {
         ${imagenesHtml}
     `;
     
-    const btnContainer = document.createElement("div");
-    btnContainer.className = "botones-accion";
-    
-    if (p.estado === "pendiente") {
-        const btnAceptar = document.createElement("button");
-        btnAceptar.textContent = "✅ Aceptar pedido";
-        btnAceptar.style.background = "#28a745";
-        btnAceptar.onclick = () => aceptarPedido(p.id, p.tel_remitente, p.remitente, p.recoleccion);
-        btnContainer.appendChild(btnAceptar);
-    }
-    
-    if (p.repartidor_id === repartidorId && p.estado === "asignado") {
-        const btnEnCamino = document.createElement("button");
-        btnEnCamino.textContent = "🚚 En camino (recogido)";
-        btnEnCamino.style.background = "#17a2b8";
-        btnEnCamino.onclick = () => cambiarEstadoEnCamino(p.id, p.tel_destinatario, p.destinatario, p.entrega);
+    // Solo mostrar botones de acción si el pedido no está entregado
+    if (p.estado !== "entregado") {
+        const btnContainer = document.createElement("div");
+        btnContainer.className = "botones-accion";
         
-        const btnEntregado = document.createElement("button");
-        btnEntregado.textContent = "✅ Entregado";
-        btnEntregado.style.background = "#6c757d";
-        btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
+        if (p.estado === "pendiente") {
+            const btnAceptar = document.createElement("button");
+            btnAceptar.textContent = "✅ Aceptar pedido";
+            btnAceptar.style.background = "linear-gradient(135deg, #28a745, #1e7e34)";
+            btnAceptar.onclick = () => aceptarPedido(p.id, p.tel_remitente, p.remitente, p.recoleccion);
+            btnContainer.appendChild(btnAceptar);
+        }
         
-        btnContainer.appendChild(btnEnCamino);
-        btnContainer.appendChild(btnEntregado);
-    }
-    
-    if (p.repartidor_id === repartidorId && p.estado === "en camino") {
-        const btnEntregado = document.createElement("button");
-        btnEntregado.textContent = "✅ Marcar como entregado";
-        btnEntregado.style.background = "#28a745";
-        btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
-        btnContainer.appendChild(btnEntregado);
-    }
-    
-    if (btnContainer.children.length > 0) {
-        card.appendChild(btnContainer);
+        if (p.repartidor_id === repartidorId && p.estado === "asignado") {
+            const btnEnCamino = document.createElement("button");
+            btnEnCamino.textContent = "🚚 En camino (recogido)";
+            btnEnCamino.style.background = "linear-gradient(135deg, #17a2b8, #117a8b)";
+            btnEnCamino.onclick = () => cambiarEstadoEnCamino(p.id, p.tel_destinatario, p.destinatario, p.entrega);
+            
+            const btnEntregado = document.createElement("button");
+            btnEntregado.textContent = "✅ Entregado";
+            btnEntregado.style.background = "linear-gradient(135deg, #6c757d, #545b62)";
+            btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
+            
+            btnContainer.appendChild(btnEnCamino);
+            btnContainer.appendChild(btnEntregado);
+        }
+        
+        if (p.repartidor_id === repartidorId && p.estado === "en camino") {
+            const btnEntregado = document.createElement("button");
+            btnEntregado.textContent = "✅ Marcar como entregado";
+            btnEntregado.style.background = "linear-gradient(135deg, #28a745, #1e7e34)";
+            btnEntregado.onclick = () => cambiarEstadoEntregado(p.id, p.tel_remitente, p.remitente);
+            btnContainer.appendChild(btnEntregado);
+        }
+        
+        if (btnContainer.children.length > 0) {
+            card.appendChild(btnContainer);
+        }
     }
     
     contenedor.appendChild(card);
@@ -474,9 +495,8 @@ function configurarFiltros() {
 function iniciarActualizacionAutomatica() {
     intervaloActualizacion = setInterval(() => {
         cargarPedidos();
-    }, 10000); // Cada 10 segundos
+    }, 10000);
     
-    // Actualizar al volver a la pestaña
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
             cargarPedidos();
@@ -490,8 +510,7 @@ function suscribirCambios() {
         .channel("pedidos-repartidor")
         .on("postgres_changes",
             { event: "*", schema: "public", table: "pedidos" },
-            (payload) => {
-                console.log("Cambio detectado:", payload);
+            () => {
                 cargarPedidos();
             }
         )
