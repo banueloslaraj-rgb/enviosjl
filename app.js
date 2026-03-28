@@ -6,6 +6,26 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Variable para prevenir doble clic
 let isSubmitting = false;
 
+// DIAGNÓSTICO: Verificar bucket de fotos al cargar
+async function verificarBucket() {
+    console.log("🔍 Verificando bucket 'fotos'...");
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from("fotos")
+            .list("", { limit: 1 });
+        
+        if (error) {
+            console.error("❌ Error al acceder al bucket 'fotos':", error);
+            console.log("⚠️ El bucket 'fotos' puede no existir o no tener permisos");
+            console.log("📌 Debes crearlo en Supabase > Storage");
+        } else {
+            console.log("✅ Bucket 'fotos' accesible correctamente");
+        }
+    } catch (e) {
+        console.error("❌ Error en verificación:", e);
+    }
+}
+
 // Distancia simulada
 function calcularDistancia() {
     return Math.floor(Math.random() * 6) + 1;
@@ -57,45 +77,73 @@ function mostrarMensaje(texto, tipo) {
     }, 5000);
 }
 
-// Función para subir una imagen individual
-async function subirImagen(file) {
-    if (!file) return null;
+// Función para subir una imagen individual - VERSIÓN MEJORADA
+async function subirImagen(file, index) {
+    if (!file) {
+        console.log("⚠️ Archivo nulo, omitiendo");
+        return null;
+    }
     
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    // Limpiar nombre del archivo
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const extension = cleanName.split('.').pop();
+    const fileName = `${Date.now()}-${index}-${cleanName}`;
+    
+    console.log(`📤 Subiendo imagen ${index + 1}: ${fileName}, tamaño: ${(file.size / 1024).toFixed(2)} KB`);
     
     try {
-        const { error } = await supabaseClient.storage
+        const { data, error } = await supabaseClient.storage
             .from("fotos")
-            .upload(fileName, file);
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type
+            });
         
         if (error) {
-            console.error("Error subiendo imagen:", error);
+            console.error(`❌ Error subiendo imagen ${index + 1}:`, error);
             return null;
         }
         
-        const { data } = supabaseClient.storage
+        console.log(`✅ Imagen ${index + 1} subida correctamente`);
+        
+        const { data: urlData } = supabaseClient.storage
             .from("fotos")
             .getPublicUrl(fileName);
         
-        return data.publicUrl;
+        console.log(`🔗 URL: ${urlData.publicUrl}`);
+        return urlData.publicUrl;
+        
     } catch (error) {
-        console.error("Error en subida:", error);
+        console.error(`❌ Error en subida de imagen ${index + 1}:`, error);
         return null;
     }
 }
 
-// Función para subir múltiples imágenes
+// Función para subir múltiples imágenes - VERSIÓN MEJORADA
 async function subirImagenes(files) {
-    if (!files || files.length === 0) return [];
+    if (!files || files.length === 0) {
+        console.log("📸 No hay imágenes para subir");
+        return [];
+    }
     
+    console.log(`📸 Iniciando subida de ${files.length} imagen(es)...`);
     const urls = [];
+    let subidasExitosas = 0;
+    
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const url = await subirImagen(file);
+        mostrarMensaje(`📸 Subiendo imagen ${i + 1} de ${files.length}...`, "info");
+        const url = await subirImagen(file, i);
         if (url) {
             urls.push(url);
+            subidasExitosas++;
+        } else {
+            console.error(`❌ Falló subida de imagen ${i + 1}`);
         }
     }
+    
+    console.log(`📸 Resultado: ${subidasExitosas} de ${files.length} imágenes subidas`);
     return urls;
 }
 
@@ -107,14 +155,11 @@ function actualizarLabelFotos(input) {
     const cantidad = input.files.length;
     
     if (cantidad > 0) {
-        const textoOriginal = fileLabel.getAttribute("data-original") || "📸 Subir fotos";
-        fileLabel.setAttribute("data-original", textoOriginal);
-        fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) <span style="font-size:11px; display:block;">✅ Listo para enviar</span>`;
+        fileLabel.innerHTML = `📸 ${cantidad} foto(s) seleccionada(s) ✅`;
         fileLabel.style.background = "#d4edda";
         fileLabel.style.borderColor = "#28a745";
     } else {
-        const textoOriginal = fileLabel.getAttribute("data-original") || "📸 Subir fotos";
-        fileLabel.innerHTML = `${textoOriginal}
+        fileLabel.innerHTML = `📸 Subir fotos
             <input type="file" id="fotos" multiple accept="image/*">`;
         fileLabel.style.background = "";
         fileLabel.style.borderColor = "";
@@ -132,6 +177,8 @@ const form = document.getElementById("pedidoForm");
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    
+    console.log("🚀 Iniciando envío de pedido...");
     
     // Prevenir doble clic
     if (isSubmitting) {
@@ -173,13 +220,16 @@ form.addEventListener("submit", async (e) => {
         if (!telRemitente.value.trim()) throw new Error("📞 El teléfono del remitente es requerido");
         if (!telDestinatario.value.trim()) throw new Error("📞 El teléfono del destinatario es requerido");
         
-        // Subir imágenes (verificar que fotosInput existe)
+        // Subir imágenes
         let fotosUrls = [];
         if (fotosInput && fotosInput.files && fotosInput.files.length > 0) {
+            console.log(`📸 Se encontraron ${fotosInput.files.length} imagen(es)`);
             mostrarMensaje(`📸 Subiendo ${fotosInput.files.length} imagen(es)...`, "info");
-            submitBtn.textContent = "⏳ Subiendo imágenes...";
+            submitBtn.textContent = `⏳ Subiendo ${fotosInput.files.length} imagen(es)...`;
             fotosUrls = await subirImagenes(fotosInput.files);
-            console.log("Imágenes subidas:", fotosUrls.length);
+            console.log("📸 URLs obtenidas:", fotosUrls);
+        } else {
+            console.log("📸 No hay imágenes seleccionadas");
         }
         
         // Calcular envío si no está calculado
@@ -207,7 +257,8 @@ form.addEventListener("submit", async (e) => {
             fecha: new Date().toISOString()
         };
         
-        console.log("Guardando pedido en Supabase...");
+        console.log("💾 Guardando pedido en Supabase...");
+        console.log("📦 Datos:", datos);
         submitBtn.textContent = "⏳ Guardando pedido...";
         
         // Guardar en Supabase
@@ -217,13 +268,13 @@ form.addEventListener("submit", async (e) => {
             .select();
         
         if (insertError) {
-            console.error("Error Supabase:", insertError);
+            console.error("❌ Error Supabase:", insertError);
             throw new Error(`Error al guardar: ${insertError.message}`);
         }
         
-        console.log("Pedido guardado exitosamente:", pedidoGuardado);
+        console.log("✅ Pedido guardado exitosamente:", pedidoGuardado);
         
-        // Preparar mensaje para WhatsApp CON TODOS LOS EMOJIS ORIGINALES
+        // Preparar mensaje para WhatsApp
         const texto = `🚚 Nuevo pedido
 📍 ${datos.recoleccion} → ${datos.entrega}
 👤 ${datos.remitente} (${datos.tel_remitente})
@@ -245,34 +296,24 @@ form.addEventListener("submit", async (e) => {
                 <input type="file" id="fotos" multiple accept="image/*">`;
             fileLabel.style.background = "";
             fileLabel.style.borderColor = "";
-            // Reasignar el evento al nuevo input
-            const newInput = document.getElementById("fotos");
-            if (newInput) {
-                newInput.addEventListener("change", function() {
-                    actualizarLabelFotos(this);
-                });
-            }
         }
         
-        // Pequeño delay antes de redirigir para asegurar que el mensaje se vea
+        // Pequeño delay antes de redirigir
         setTimeout(() => {
-            // Redirigir a WhatsApp
             window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;
         }, 1500);
         
     } catch (error) {
-        console.error("Error completo:", error);
+        console.error("❌ Error completo:", error);
         
-        // Mostrar mensaje de error detallado
         let mensajeError = error.message || "❌ Error al enviar. Intenta de nuevo.";
         
-        // Mensajes más amigables con emojis
         if (mensajeError.includes("duplicate key")) {
             mensajeError = "❌ Error de duplicado. Intenta de nuevo.";
         } else if (mensajeError.includes("network")) {
             mensajeError = "❌ Error de red. Verifica tu conexión a internet.";
-        } else if (mensajeError.includes("storage")) {
-            mensajeError = "📸 Error al subir imágenes. Intenta con menos fotos o imágenes más pequeñas.";
+        } else if (mensajeError.includes("storage") || mensajeError.includes("bucket")) {
+            mensajeError = "📸 Error al subir imágenes. Verifica que el bucket 'fotos' exista en Supabase.";
         }
         
         mostrarMensaje(mensajeError, "error");
@@ -296,3 +337,8 @@ if (fotosInputInicial) {
 if (pagoInput && pagoInput.value) {
     actualizarEnvio();
 }
+
+// Ejecutar diagnóstico al cargar
+verificarBucket();
+
+console.log("🚀 App de pedidos lista");
