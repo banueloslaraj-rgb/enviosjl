@@ -79,7 +79,7 @@ function mostrarNotificacion(mensaje, tipo = "info") {
     setTimeout(() => notif.remove(), 2000);
 }
 
-// 🔄 ACTUALIZAR ESTADO DE PEDIDO + WHATSAPP
+// 🔄 ACTUALIZAR ESTADO DE PEDIDO + WHATSAPP (MULTIDISPOSITIVO)
 async function actualizarEstadoPedido(id) {
     const selectElement = document.getElementById(`estado-${id}`);
     if (!selectElement) {
@@ -138,11 +138,16 @@ async function actualizarEstadoPedido(id) {
             mensaje = `✅ *Pedido entregado*\n\nHola ${pedido.remitente}, tu pedido ya fue entregado correctamente.\n\n📦 ${pedido.descripcion}`;
         }
 
-        // 🚀 Abrir WhatsApp
+        // 🚀 WHATSAPP UNIVERSAL
         if (telefono && mensaje) {
-            const whatsappUrl = `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=52${telefono}&text=${encodeURIComponent(mensaje)}`;
+
             setTimeout(() => {
-                window.open(whatsappUrl, "_blank");
+                if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    window.location.href = whatsappUrl; // 📱 celular
+                } else {
+                    window.open(whatsappUrl, "_blank"); // 💻 computadora
+                }
             }, 800);
         }
 
