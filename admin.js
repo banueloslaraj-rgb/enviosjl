@@ -9,6 +9,59 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ========== MEJORA: FUNCIONES PARA FORMATEAR FECHA EN HORA DE MÉXICO ==========
+
+// Función para formatear fecha en hora de México (COMPLETA)
+function formatearFechaMexico(fechaISO) {
+    if (!fechaISO) return "Sin fecha";
+    
+    try {
+        const fecha = new Date(fechaISO);
+        
+        if (isNaN(fecha.getTime())) {
+            console.error("Fecha inválida:", fechaISO);
+            return "Fecha inválida";
+        }
+        
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error("Error al formatear fecha:", error);
+        return "Error de formato";
+    }
+}
+
+// Función para formatear fecha corta (para tarjetas)
+function formatearFechaCorta(fechaISO) {
+    if (!fechaISO) return "Sin fecha";
+    
+    try {
+        const fecha = new Date(fechaISO);
+        
+        if (isNaN(fecha.getTime())) {
+            return "Fecha inválida";
+        }
+        
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return "Error";
+    }
+}
+
 // Variables
 let filtroEstado = null;
 let intervaloActualizacion = null;
@@ -205,23 +258,10 @@ function toggleEntregados() {
     }
 }
 
-// Renderizar card de pedido
+// Renderizar card de pedido (MEJORADO - usando formatearFechaCorta)
 function renderizarCardPedido(p) {
-    let fechaFormateada = "Sin fecha";
-    if (p.fecha) {
-        try {
-            const fechaObj = new Date(p.fecha);
-            if (!isNaN(fechaObj.getTime())) {
-                fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-        } catch (e) {}
-    }
+    // ⭐ MEJORA: Usar la función de formato de hora de México
+    const fechaFormateada = formatearFechaCorta(p.fecha);
     
     let imagenesHtml = '';
     if (p.fotos && Array.isArray(p.fotos) && p.fotos.length > 0) {
@@ -239,7 +279,7 @@ function renderizarCardPedido(p) {
         <div class="card ${getEstadoClass(p.estado)}">
             <div class="pedido-id">
                 🆔 Pedido #${p.id.substring(0, 8)}...
-                <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+                <span class="pedido-fecha" title="${formatearFechaMexico(p.fecha)}">📅 ${fechaFormateada}</span>
             </div>
             
             <p><strong>📍 Recolección:</strong> ${escapeHtml(p.recoleccion) || "No especificado"}</p>
@@ -471,21 +511,8 @@ async function cargarRepartidores() {
             const card = document.createElement("div");
             card.className = "card repartidor-card";
             
-            let fechaFormateada = "Sin fecha";
-            if (r.fecha_registro) {
-                try {
-                    const fechaObj = new Date(r.fecha_registro);
-                    if (!isNaN(fechaObj.getTime())) {
-                        fechaFormateada = fechaObj.toLocaleString('es-MX', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                    }
-                } catch (e) {}
-            }
+            // ⭐ MEJORA: Usar la función de formato de hora de México para la fecha de registro
+            let fechaFormateada = formatearFechaCorta(r.fecha_registro);
             
             let estadoColor = "";
             let estadoTexto = "";
@@ -510,7 +537,7 @@ async function cargarRepartidores() {
             card.innerHTML = `
                 <div class="repartidor-header">
                     <strong>🛵 ${escapeHtml(r.nombre_completo)}</strong>
-                    <span class="repartidor-fecha">📅 ${fechaFormateada}</span>
+                    <span class="repartidor-fecha" title="${formatearFechaMexico(r.fecha_registro)}">📅 ${fechaFormateada}</span>
                 </div>
                 
                 <p><strong>📞 Teléfono:</strong> ${escapeHtml(r.telefono)}</p>
@@ -770,6 +797,7 @@ function suscribirCambios() {
 // 🚀 Inicializar
 document.addEventListener("DOMContentLoaded", () => {
     console.log("🚀 Panel admin iniciado con actualización automática");
+    console.log("🕐 Zona horaria configurada: America/Mexico_City");
     cargarEstadisticas();
     cargarPedidos();
     iniciarActualizacionAutomatica();

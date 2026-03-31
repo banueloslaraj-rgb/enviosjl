@@ -34,18 +34,60 @@ if (nombreRepartidorSpan) {
     nombreRepartidorSpan.textContent = repartidorNombre;
 }
 
-// Formatear fecha local
-function formatearFechaLocal(fechaISO) {
+// ========== MEJORA: Formatear fecha en hora de México ==========
+function formatearFechaMexico(fechaISO) {
     if (!fechaISO) return "Sin fecha";
-    const fecha = new Date(fechaISO);
-    return fecha.toLocaleString('es-MX', {
-        timeZone: 'America/Mexico_City',
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    
+    try {
+        const fecha = new Date(fechaISO);
+        
+        // Verificar si la fecha es válida
+        if (isNaN(fecha.getTime())) {
+            console.error("Fecha inválida:", fechaISO);
+            return "Fecha inválida";
+        }
+        
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error("Error al formatear fecha:", error);
+        return "Error de formato";
+    }
 }
+
+// Función para formatear solo fecha corta (para tarjetas)
+function formatearFechaCorta(fechaISO) {
+    if (!fechaISO) return "Sin fecha";
+    
+    try {
+        const fecha = new Date(fechaISO);
+        
+        if (isNaN(fecha.getTime())) {
+            return "Fecha inválida";
+        }
+        
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return "Error";
+    }
+}
+
+// Mantener la función original para compatibilidad
+const formatearFechaLocal = formatearFechaCorta;
 
 // Mostrar notificación
 function mostrarNotificacion(mensaje, tipo = "info") {
@@ -91,6 +133,7 @@ function actualizarTimestamp() {
     if (lastUpdateSpan) {
         const ahora = new Date();
         lastUpdateSpan.textContent = ahora.toLocaleTimeString('es-MX', {
+            timeZone: 'America/Mexico_City',
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
@@ -300,28 +343,24 @@ async function cargarPedidos() {
         let pedidosMostrar = [];
         
         if (filtroActual === "todos") {
-            // Todos: pendientes + sus pedidos activos (asignados/en camino)
             pedidosMostrar = data.filter(p => 
                 p.estado === "pendiente" || 
                 (p.repartidor_id === repartidorId && (p.estado === "asignado" || p.estado === "en camino"))
             );
         } else if (filtroActual === "pendiente") {
-            // Solo pedidos pendientes disponibles
             pedidosMostrar = data.filter(p => p.estado === "pendiente");
         } else if (filtroActual === "asignado") {
-            // Sus pedidos activos (asignados y en camino)
             pedidosMostrar = data.filter(p => 
                 p.repartidor_id === repartidorId && 
                 (p.estado === "asignado" || p.estado === "en camino")
             );
         } else if (filtroActual === "entregado") {
-            // SOLO SUS PEDIDOS ENTREGADOS (historial personal)
             pedidosMostrar = data.filter(p => 
                 p.repartidor_id === repartidorId && p.estado === "entregado"
             );
         }
         
-        // Contar pendientes disponibles (para el badge)
+        // Contar pendientes disponibles
         const pendientesDisponibles = data.filter(p => p.estado === "pendiente").length;
         if (pendientesCountSpan) pendientesCountSpan.textContent = pendientesDisponibles;
         
@@ -358,7 +397,7 @@ async function cargarPedidos() {
     }
 }
 
-// Renderizar un pedido individual
+// Renderizar un pedido individual (MEJORADO con hora correcta)
 function renderizarPedido(p) {
     const card = document.createElement("div");
     card.className = "card";
@@ -368,7 +407,9 @@ function renderizarPedido(p) {
                        p.estado === "en camino" ? "estado-en-camino" : "estado-entregado";
     card.classList.add(estadoClass);
     
-    const fechaFormateada = formatearFechaLocal(p.fecha);
+    // ⭐ MEJORA: Usar la función de formato de hora de México
+    const fechaFormateada = formatearFechaCorta(p.fecha);
+    const fechaCompleta = formatearFechaMexico(p.fecha);
     
     let imagenesHtml = "";
     if (p.fotos && p.fotos.length > 0) {
@@ -385,7 +426,7 @@ function renderizarPedido(p) {
     card.innerHTML = `
         <div class="pedido-header">
             <strong>🆔 Pedido #${p.id.substring(0, 8)}...</strong>
-            <span class="pedido-fecha">📅 ${fechaFormateada}</span>
+            <span class="pedido-fecha" title="${fechaCompleta}">📅 ${fechaFormateada}</span>
         </div>
         
         <p><strong>📍 Recolección:</strong> ${p.recoleccion}</p>

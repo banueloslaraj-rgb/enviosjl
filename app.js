@@ -7,6 +7,59 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // Variable para prevenir doble clic
 let isSubmitting = false;
 
+// ========== NUEVA FUNCIÓN: FORMATEAR FECHA EN HORA DE MÉXICO ==========
+function formatearFechaMexico(fechaUTC) {
+    if (!fechaUTC) return 'Fecha no disponible';
+    
+    try {
+        const fecha = new Date(fechaUTC);
+        
+        // Verificar si la fecha es válida
+        if (isNaN(fecha.getTime())) {
+            console.error("Fecha inválida:", fechaUTC);
+            return 'Fecha inválida';
+        }
+        
+        // Formatear en hora de México
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error("Error al formatear fecha:", error);
+        return 'Error de formato';
+    }
+}
+
+// ========== FUNCIÓN PARA FORMATEAR SOLO HORA (para mensajes rápidos) ==========
+function formatearHoraMexico(fechaUTC) {
+    if (!fechaUTC) return 'Hora no disponible';
+    
+    try {
+        const fecha = new Date(fechaUTC);
+        
+        if (isNaN(fecha.getTime())) {
+            return 'Hora inválida';
+        }
+        
+        return fecha.toLocaleString('es-MX', {
+            timeZone: 'America/Mexico_City',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (error) {
+        console.error("Error al formatear hora:", error);
+        return 'Error';
+    }
+}
+
 // Distancia simulada
 function calcularDistancia() {
     return Math.floor(Math.random() * 6) + 1;
@@ -180,7 +233,7 @@ async function subirImagenes(files) {
     return urls;
 }
 
-// Función para actualizar la información de fotos (VERSIÓN CORREGIDA)
+// Función para actualizar la información de fotos
 function actualizarInfoFotos(input) {
     const fotosInfo = document.getElementById("fotos-info");
     if (!fotosInfo) return;
@@ -335,7 +388,7 @@ if (pagoInput) {
     pagoInput.addEventListener("input", actualizarEnvio);
 }
 
-// Configurar la subida de fotos (VERSIÓN CORREGIDA)
+// Configurar la subida de fotos
 const fileLabelButton = document.querySelector(".file-label-button");
 const fotosInput = document.getElementById("fotos");
 
@@ -361,6 +414,7 @@ form.addEventListener("submit", async (e) => {
     e.preventDefault();
     
     console.log("🚀 Iniciando envío de pedido...");
+    console.log("🕐 Hora actual en México:", formatearFechaMexico(new Date()));
     
     // Prevenir doble clic
     if (isSubmitting) {
@@ -438,6 +492,13 @@ form.addEventListener("submit", async (e) => {
             envioTexto = `$${envio} aprox (${distancia} km)`;
         }
         
+        // Obtener fecha actual en formato ISO (UTC) para guardar en BD
+        const fechaActualUTC = new Date().toISOString();
+        const fechaFormateadaMexico = formatearFechaMexico(fechaActualUTC);
+        
+        console.log("📅 Fecha UTC guardada:", fechaActualUTC);
+        console.log("📅 Fecha México (para referencia):", fechaFormateadaMexico);
+        
         // Preparar datos
         const datos = {
             recoleccion: recoleccion.value.trim(),
@@ -451,7 +512,8 @@ form.addEventListener("submit", async (e) => {
             envio: envioTexto,
             fotos: fotosUrls,
             estado: "pendiente",
-            fecha: new Date().toISOString()
+            fecha: fechaActualUTC,  // Guardamos en UTC (buena práctica)
+            zona_horaria: "America/Mexico_City"  // Guardamos la zona horaria de referencia
         };
         
         console.log("💾 Guardando pedido en Supabase...");
@@ -471,7 +533,7 @@ form.addEventListener("submit", async (e) => {
         
         console.log("✅ Pedido guardado exitosamente:", pedidoGuardado);
         
-        // Preparar mensaje para WhatsApp
+        // ========== MEJORA: Preparar mensaje para WhatsApp con hora de México ==========
         let texto = `🚚 *NUEVO PEDIDO* 🚚\n\n`;
         texto += `📍 *Recolección:* ${datos.recoleccion}\n`;
         texto += `📍 *Entrega:* ${datos.entrega}\n\n`;
@@ -485,9 +547,17 @@ form.addEventListener("submit", async (e) => {
         
         if (fotosUrls.length > 0) {
             texto += `📸 *Fotos:* ${fotosUrls.length} imagen(es) subida(s)\n`;
+            if (fotosUrls.length <= 3) {
+                fotosUrls.forEach((url, i) => {
+                    texto += `   Foto ${i+1}: ${url}\n`;
+                });
+            }
+            texto += `\n`;
         }
         
-        texto += `\n🕐 *Fecha:* ${new Date(datos.fecha).toLocaleString()}`;
+        // ⭐⭐⭐ IMPORTANTE: Usar la función formatearFechaMexico para mostrar hora correcta ⭐⭐⭐
+        texto += `\n🕐 *Fecha del pedido:* ${formatearFechaMexico(datos.fecha)}`;
+        texto += `\n📍 *Zona horaria:* México (America/Mexico_City)`;
         
         // Mostrar mensaje de éxito
         mostrarMensaje("✅ ¡Pedido enviado con éxito! Redirigiendo a WhatsApp...", "success");
@@ -505,6 +575,11 @@ form.addEventListener("submit", async (e) => {
         // Resetear el input de fotos
         if (fotosInputSubmit) {
             fotosInputSubmit.value = "";
+        }
+        
+        // Resetear el campo de envío calculado
+        if (envioCalculado) {
+            envioCalculado.value = "";
         }
         
         // Pequeño delay antes de redirigir
@@ -529,8 +604,11 @@ form.addEventListener("submit", async (e) => {
         
         // Restaurar botón
         isSubmitting = false;
-        submitBtn.textContent = textoOriginal;
-        submitBtn.disabled = false;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.textContent = textoOriginal;
+            submitBtn.disabled = false;
+        }
     }
 });
 
@@ -542,10 +620,17 @@ if (pagoInput && pagoInput.value) {
 // Ejecutar diagnóstico automáticamente después de cargar la página
 setTimeout(() => {
     console.log("🚀 App de pedidos lista");
+    console.log("🕐 Zona horaria configurada: America/Mexico_City");
+    console.log("🕐 Hora actual en México:", formatearFechaMexico(new Date()));
     diagnosticarSupabase();
 }, 1000);
 
-// Exponer función de prueba en consola
+// Exponer funciones útiles en consola para debugging
 window.probarSubidaImagen = probarSubidaImagen;
+window.formatearFechaMexico = formatearFechaMexico;
+window.formatearHoraMexico = formatearHoraMexico;
 
-console.log("✅ App lista. Escribe 'probarSubidaImagen()' en la consola para probar la subida de imágenes");
+console.log("✅ App lista. Funciones disponibles:");
+console.log("   - probarSubidaImagen() - Probar subida de imágenes");
+console.log("   - formatearFechaMexico(fecha) - Convertir UTC a hora México");
+console.log("   - formatearHoraMexico(fecha) - Convertir solo hora");

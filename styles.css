@@ -135,36 +135,52 @@ button:disabled {
   display: none;
 }
 
-/* ========== BOTÓN WHATSAPP FLOTANTE (ORIGINAL) ========== */
+/* ========== BOTONES WHATSAPP CORREGIDOS ========== */
+.whatsapp-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+}
+
+/* Estilo base para ambos botones */
 .wpp-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #25D366;
-  color: white;
-  padding: 15px;
-  border-radius: 50%;
-  text-decoration: none;
-  font-size: 24px;
-  width: 55px;
-  height: 55px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  z-index: 1000;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    font-size: 26px;
+    font-weight: bold;
+    color: white;
+}
+
+/* Botón de Cotizar */
+.wpp-btn.cotizar {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+}
+
+/* Botón de Ayuda */
+.wpp-btn.ayuda {
+    background: linear-gradient(135deg, #3498db, #2980b9);
 }
 
 /* Efecto hover para computadora */
 .wpp-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(37,211,102,0.4);
+    transform: scale(1.1);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
 }
 
 /* Efecto active (cuando se presiona) */
 .wpp-btn:active {
-  transform: scale(0.95);
+    transform: scale(0.95);
 }
 
 /* ========== INPUTS CON EFECTOS TÁCTILES ========== */
@@ -330,56 +346,6 @@ input:active, textarea:active {
     background: linear-gradient(135deg, #219a52, #1e8449);
 }
 
-/* Botones de WhatsApp duales */
-.whatsapp-buttons {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 1000;
-}
-
-.wpp-btn-dual {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    width: auto;
-    min-width: 110px;
-}
-
-.wpp-btn-dual i {
-    font-size: 16px;
-}
-
-.wpp-btn-dual.cotizar {
-    background: linear-gradient(135deg, #25D366, #128C7E);
-    color: white;
-}
-
-.wpp-btn-dual.ayuda {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-    color: white;
-}
-
-.wpp-btn-dual:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-}
-
-.wpp-btn-dual:active {
-    transform: translateY(0);
-}
-
 /* ========== RESPONSIVE PARA MÓVIL ========== */
 @media (max-width: 600px) {
   .app {
@@ -443,26 +409,13 @@ input:active, textarea:active {
   .whatsapp-buttons {
     bottom: 15px;
     right: 15px;
-    gap: 8px;
+    gap: 10px;
   }
   
-  .wpp-btn-dual {
-    padding: 8px 12px;
-    font-size: 11px;
-    min-width: 85px;
-  }
-  
-  .wpp-btn-dual i {
-    font-size: 12px;
-  }
-  
-  /* Mantener el botón original para compatibilidad */
   .wpp-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
-    bottom: 15px;
-    right: 15px;
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
   }
 }
 
