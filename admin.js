@@ -9,14 +9,20 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ========== MEJORA: FUNCIONES PARA FORMATEAR FECHA EN HORA DE MÉXICO ==========
+// ========== FUNCIONES PARA FORMATEAR FECHA EN HORA DE MÉXICO (CORREGIDAS) ==========
 
 // Función para formatear fecha en hora de México (COMPLETA)
 function formatearFechaMexico(fechaISO) {
     if (!fechaISO) return "Sin fecha";
     
     try {
-        const fecha = new Date(fechaISO);
+        // Si la fecha no tiene 'Z', la tratamos como UTC igualmente
+        let fechaStr = fechaISO;
+        if (!fechaStr.includes('Z') && !fechaStr.includes('+')) {
+            fechaStr = fechaStr + 'Z';  // Forzar como UTC
+        }
+        
+        const fecha = new Date(fechaStr);
         
         if (isNaN(fecha.getTime())) {
             console.error("Fecha inválida:", fechaISO);
@@ -44,7 +50,13 @@ function formatearFechaCorta(fechaISO) {
     if (!fechaISO) return "Sin fecha";
     
     try {
-        const fecha = new Date(fechaISO);
+        // Si la fecha no tiene 'Z', la tratamos como UTC igualmente
+        let fechaStr = fechaISO;
+        if (!fechaStr.includes('Z') && !fechaStr.includes('+')) {
+            fechaStr = fechaStr + 'Z';  // Forzar como UTC
+        }
+        
+        const fecha = new Date(fechaStr);
         
         if (isNaN(fecha.getTime())) {
             return "Fecha inválida";
@@ -58,6 +70,7 @@ function formatearFechaCorta(fechaISO) {
             minute: '2-digit'
         });
     } catch (error) {
+        console.error("Error:", error);
         return "Error";
     }
 }
@@ -258,9 +271,8 @@ function toggleEntregados() {
     }
 }
 
-// Renderizar card de pedido (MEJORADO - usando formatearFechaCorta)
+// Renderizar card de pedido
 function renderizarCardPedido(p) {
-    // ⭐ MEJORA: Usar la función de formato de hora de México
     const fechaFormateada = formatearFechaCorta(p.fecha);
     
     let imagenesHtml = '';
@@ -349,7 +361,6 @@ async function cargarPedidos() {
         if (pendientes.length > ultimaCantidadPendientes) {
             const nuevos = pendientes.length - ultimaCantidadPendientes;
             mostrarNotificacion(`🔔 ${nuevos} nuevo(s) pedido(s) pendiente(s)`, "info");
-            // Reproducir sonido opcional
             try {
                 const audio = new Audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3");
                 audio.volume = 0.2;
@@ -511,7 +522,6 @@ async function cargarRepartidores() {
             const card = document.createElement("div");
             card.className = "card repartidor-card";
             
-            // ⭐ MEJORA: Usar la función de formato de hora de México para la fecha de registro
             let fechaFormateada = formatearFechaCorta(r.fecha_registro);
             
             let estadoColor = "";
@@ -750,7 +760,6 @@ async function cargarEstadisticas() {
 
 // 🚀 Iniciar actualización automática
 function iniciarActualizacionAutomatica() {
-    // Actualizar cada 10 segundos
     intervaloActualizacion = setInterval(() => {
         if (pestañaActiva === "pedidos") {
             cargarPedidos();
@@ -759,7 +768,6 @@ function iniciarActualizacionAutomatica() {
         }
     }, 10000);
     
-    // Actualizar al volver a la pestaña
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
             if (pestañaActiva === "pedidos") {

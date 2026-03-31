@@ -34,14 +34,21 @@ if (nombreRepartidorSpan) {
     nombreRepartidorSpan.textContent = repartidorNombre;
 }
 
-// ========== MEJORA: Formatear fecha en hora de México ==========
+// ========== FUNCIONES PARA FORMATEAR FECHA EN HORA DE MÉXICO (CORREGIDAS) ==========
+
+// Función para formatear fecha completa
 function formatearFechaMexico(fechaISO) {
     if (!fechaISO) return "Sin fecha";
     
     try {
-        const fecha = new Date(fechaISO);
+        // Si la fecha no tiene 'Z', la tratamos como UTC igualmente
+        let fechaStr = fechaISO;
+        if (!fechaStr.includes('Z') && !fechaStr.includes('+')) {
+            fechaStr = fechaStr + 'Z';  // Forzar como UTC
+        }
         
-        // Verificar si la fecha es válida
+        const fecha = new Date(fechaStr);
+        
         if (isNaN(fecha.getTime())) {
             console.error("Fecha inválida:", fechaISO);
             return "Fecha inválida";
@@ -63,12 +70,18 @@ function formatearFechaMexico(fechaISO) {
     }
 }
 
-// Función para formatear solo fecha corta (para tarjetas)
+// Función para formatear fecha corta (para tarjetas)
 function formatearFechaCorta(fechaISO) {
     if (!fechaISO) return "Sin fecha";
     
     try {
-        const fecha = new Date(fechaISO);
+        // Si la fecha no tiene 'Z', la tratamos como UTC igualmente
+        let fechaStr = fechaISO;
+        if (!fechaStr.includes('Z') && !fechaStr.includes('+')) {
+            fechaStr = fechaStr + 'Z';  // Forzar como UTC
+        }
+        
+        const fecha = new Date(fechaStr);
         
         if (isNaN(fecha.getTime())) {
             return "Fecha inválida";
@@ -82,6 +95,7 @@ function formatearFechaCorta(fechaISO) {
             minute: '2-digit'
         });
     } catch (error) {
+        console.error("Error:", error);
         return "Error";
     }
 }
@@ -397,7 +411,7 @@ async function cargarPedidos() {
     }
 }
 
-// Renderizar un pedido individual (MEJORADO con hora correcta)
+// Renderizar un pedido individual
 function renderizarPedido(p) {
     const card = document.createElement("div");
     card.className = "card";
@@ -407,7 +421,6 @@ function renderizarPedido(p) {
                        p.estado === "en camino" ? "estado-en-camino" : "estado-entregado";
     card.classList.add(estadoClass);
     
-    // ⭐ MEJORA: Usar la función de formato de hora de México
     const fechaFormateada = formatearFechaCorta(p.fecha);
     const fechaCompleta = formatearFechaMexico(p.fecha);
     
