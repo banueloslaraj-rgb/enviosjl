@@ -293,7 +293,11 @@ form.addEventListener("submit", async (e) => {
         
         const fechaActualUTC = new Date().toISOString();
         
-        // ⭐ DATOS CORREGIDOS - SIN zona_horaria ⭐
+        // Obtener método de pago seleccionado
+        const metodoPagoSeleccionado = document.querySelector('input[name="metodo_pago"]:checked');
+        const metodoPago = metodoPagoSeleccionado ? metodoPagoSeleccionado.value : "efectivo";
+        
+        // ⭐ DATOS CON MÉTODO DE PAGO ⭐
         const datos = {
             recoleccion: recoleccion.value.trim(),
             entrega: entrega.value.trim(),
@@ -306,7 +310,8 @@ form.addEventListener("submit", async (e) => {
             envio: envioTexto,
             fotos: fotosUrls,
             estado: "pendiente",
-            fecha: fechaActualUTC
+            fecha: fechaActualUTC,
+            metodo_pago: metodoPago
         };
         
         console.log("💾 Guardando pedido en Supabase...");
@@ -333,7 +338,8 @@ form.addEventListener("submit", async (e) => {
         texto += `📞 *Teléfono:* ${datos.tel_destinatario}\n\n`;
         texto += `📦 *Descripción:* ${datos.descripcion}\n\n`;
         texto += `💰 *Pago producto:* $${datos.precio}\n`;
-        texto += `🚚 *Costo envío:* ${datos.envio}\n\n`;
+        texto += `🚚 *Costo envío:* ${datos.envio}\n`;
+        texto += `💳 *Método de pago:* ${datos.metodo_pago === "transferencia" ? "Transferencia bancaria" : "Efectivo"}\n\n`;
         
         if (fotosUrls.length > 0) {
             texto += `📸 *Fotos:* ${fotosUrls.length} imagen(es) subida(s)\n\n`;
@@ -351,6 +357,10 @@ form.addEventListener("submit", async (e) => {
         }
         if (fotosInputSubmit) fotosInputSubmit.value = "";
         if (envioCalculado) envioCalculado.value = "";
+        
+        // Resetear método de pago a efectivo (default)
+        const radioEfectivo = document.querySelector('input[name="metodo_pago"][value="efectivo"]');
+        if (radioEfectivo) radioEfectivo.checked = true;
         
         setTimeout(() => {
             window.location.href = `https://wa.me/5213111063251?text=${encodeURIComponent(texto)}`;

@@ -311,6 +311,7 @@ function renderizarCardPedido(p) {
             <p><strong>📦 Descripción:</strong> ${escapeHtml(p.descripcion) || "No especificado"}</p>
             <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio || "0"}</strong></p>
             <p><strong>🚚 Costo envío:</strong> <strong>${p.envio || "No calculado"}</strong></p>
+            <p><strong>💳 Método de pago:</strong> ${p.metodo_pago === "transferencia" ? '💸 Transferencia' : '💵 Efectivo'}</p>
             <p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre ? `${escapeHtml(p.repartidor_nombre)} (${escapeHtml(p.repartidor_telefono)})` : "❌ Sin asignar"}</p>
             <p><strong>📊 Estado:</strong> ${getEstadoBadge(p.estado || "pendiente")}</p>
             
@@ -607,7 +608,7 @@ async function actualizarEstadoRepartidor(id) {
         
         btn.innerText = "✅ Actualizado";
         
-        const loginUrl = "https://banueloslaraj-rgb.github.io/enviosjl/login-repartidor.html";
+        const loginUrl = "https://mandaditos-express.netlify.app/login-repartidor.html";
         
         if (estado === "activo" && repartidor && repartidor.telefono) {
             const mensaje = `🎉 *¡FELICIDADES!* 🎉\n\nHola ${repartidor.nombre_completo}, tu registro como repartidor de Mandaditos Express ha sido *APROBADO* ✅\n\n🔑 Tu código de acceso es: *${repartidor.codigo}*\n\nIngresa a: ${loginUrl}\n\n¡Bienvenido al equipo! 🛵`;

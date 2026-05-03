@@ -459,6 +459,7 @@ function renderizarPedido(p) {
         <p><strong>📦 Descripción:</strong> ${p.descripcion}</p>
         <p><strong>💰 Pago producto:</strong> <strong style="color:#27ae60;">$${p.precio}</strong></p>
         <p><strong>🚚 Envío:</strong> ${p.envio || "-"}</p>
+        <p><strong>💳 Pago:</strong> ${p.metodo_pago === "transferencia" ? '💸 Transferencia' : '💵 Efectivo'}</p>
         <p><strong>📊 Estado:</strong> <span class="estado-texto">${p.estado.toUpperCase()}</span></p>
         ${p.repartidor_nombre ? `<p><strong>🛵 Repartidor:</strong> ${p.repartidor_nombre}</p>` : ''}
         ${imagenesHtml}
